@@ -29,7 +29,12 @@ for (const file of htmlFiles) {
     const reference = match[1];
     if (/^(?:https?:|mailto:|tel:|data:|#)/i.test(reference)) continue;
     const localPath = reference.split(/[?#]/)[0];
-    if (!fs.existsSync(path.join(root, localPath))) fail(file, `lokale Referenz fehlt: ${reference}`);
+    const sitePath = localPath.replace(/^\//, "");
+    const target = sitePath === "" ? "index.html" : path.extname(sitePath) ? sitePath : `${sitePath}.html`;
+    if (!fs.existsSync(path.join(root, target))) fail(file, `lokale Referenz fehlt: ${reference}`);
+    if (match[0].startsWith("<a ") && localPath.endsWith(".html")) {
+      fail(file, `interner Link mit .html: ${reference}`);
+    }
   }
 
   for (const match of html.matchAll(/<img\b([^>]*)>/gi)) {

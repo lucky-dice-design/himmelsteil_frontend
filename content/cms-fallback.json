@@ -1,4 +1,34 @@
 {
+  "legal_pages": [],
+  "legal_sections": [],
+  "home_page": {
+    "seo_title": "Individuelle Hochzeits- & Eventpapeterie | himmelsteil Weilheim",
+    "seo_description": "Individuelle Papeterie aus Weilheim für Hochzeiten, Taufen, Geburtstage und besondere Events. Persönlich gestaltet statt von der Stange.",
+    "hero_eyebrow": "Individuelle Papeterie aus Weilheim",
+    "hero_title": "Schönes auf Papier.",
+    "hero_body": "Individuelle Papeterie für Hochzeit, Taufe, Geburtstag und all die Momente, die ein wenig länger bleiben dürfen.",
+    "hero_image": "assets/papeterie-event.jpeg",
+    "hero_image_alt": "Individuelle Einladung mit Umschlag und feiner Illustration",
+    "hero_primary_label": "Projekt anfragen",
+    "hero_secondary_label": "Arbeiten ansehen",
+    "intro_eyebrow": "Individuell statt Massenware",
+    "intro_title": "Ein roter Faden für eure Feier.",
+    "intro_body": "Von der ersten Einladung bis zur Menükarte, vom Sitzplan bis zum kleinen Gastgeschenk entsteht ein Designkonzept, das eure Geschichte trägt. Hochzeit ist unser Schwerpunkt, aber längst nicht der einzige schöne Anlass.",
+    "intro_link_label": "Papeterie-Pakete entdecken",
+    "occasions_eyebrow": "Für große und kleine Feste",
+    "occasions_title": "Papeterie, die zum Anlass passt."
+  },
+  "home_tiles": [
+    {"sort": 1, "destination": "galerie", "label": "Galerie", "image": "assets/papeterie-welcome.jpeg", "image_alt": "Papeterie mit Aufschrift für Dich", "image_class": "reference-welcome"},
+    {"sort": 2, "destination": "pakete", "label": "Pakete", "image": null, "image_alt": null},
+    {"sort": 3, "destination": "blog", "label": "Blog", "image": null, "image_alt": null}
+  ],
+  "home_occasions": [
+    {"sort": 1, "title": "Hochzeit", "description": "Einladung, Tagespapeterie und Dankeskarte."},
+    {"sort": 2, "title": "Taufe & Kommunion", "description": "Persönlich, leicht und liebevoll abgestimmt."},
+    {"sort": 3, "title": "Geburtstag", "description": "Vom runden Geburtstag bis zur Gartenfeier."},
+    {"sort": 4, "title": "Business & Event", "description": "Einladungen, Karten und kleine Markendetails."}
+  ],
   "gallery": [
     {"sort": 1, "category": "hochzeit", "title": "Einladung & Umschlag", "description": "Feine Linien, reduzierte Farben und ein persönliches Detail.", "image": "assets/papeterie-event.jpeg", "image_alt": "Einladungskarte mit illustriertem Zweig", "image_class": "reference-event"},
     {"sort": 2, "category": "hochzeit", "title": "Tagespapeterie", "description": "Tischnummern, Menükarte und Sitzplan als stimmige Familie.", "swatch_class": "botanical"},

@@ -15,14 +15,14 @@ Statische Mehrseiten-Website für eine Design- und Papeterie-Marke mit Fokus auf
 ## Architektur
 
 - Frontend und Hosting: statische Mehrseiten-Website auf demselben IONOS VPS wie Directus, ausgeliefert von Caddy unter `himmelsteil.de`.
-- CMS: selbst gehostetes Directus auf dem IONOS VPS als geschütztes Redaktionssystem für Galerie, Pakete und Blog.
-- Build: `scripts/build-directus-site.mjs` lädt nur veröffentlichte Inhalte, erzeugt die Blogseiten und speichert CMS-Bilder lokal im Build-Artefakt.
+- CMS: selbst gehostetes Directus auf dem IONOS VPS als geschütztes Redaktionssystem für Startseite, Galerie, Pakete, Blog und Rechtstexte.
+- Build: `scripts/build-directus-site.mjs` lädt Startseitentexte und veröffentlichte Einträge, erzeugt die Blogseiten und speichert CMS-Bilder lokal im Build-Artefakt.
 - Fallback: Ohne Directus-Zugang baut die Website aus `content/cms-fallback.json`.
 - Shop später: als getrenntes Modul evaluieren, ohne die CMS-Struktur zu blockieren.
 
 GitHub dient als Versionsverwaltung und führt nur die Build-Prüfung aus. Das Frontend wird nicht über GitHub Pages veröffentlicht. Directus wird nur beim Build angesprochen; Besucher erhalten statische Dateien. Die Serverkonfiguration liegt im separaten Repository `himmelsteil_backend`.
 
-Das Datenmodell und die VPS-Einrichtung sind im separaten Repository `himmelsteil_backend` dokumentiert. Ein automatischer Veröffentlichungs-Flow ist noch nicht eingerichtet.
+Das Datenmodell und die VPS-Einrichtung sind im separaten Repository `himmelsteil_backend` dokumentiert. Die Startseite nutzt dort `home_page`, `home_tiles` und `home_occasions`; Linkziele und Layout bleiben im Frontend fest. Der Cron-basierte Vorschau-Build liegt unter `himmelsteil_backend/server/preview/`; er wird auf dem VPS eingerichtet und veröffentlicht nur die geschützte Vorschau.
 
 ## SEO und KI-Crawler
 
@@ -43,13 +43,13 @@ Das Datenmodell und die VPS-Einrichtung sind im separaten Repository `himmelstei
 
 ## Deployment auf dem VPS
 
-Die GitHub Action in `.github/workflows/check.yml` prüft nur den Build. Sie veröffentlicht nichts. Das Frontend kann zunächst mit Fallback-Inhalten gebaut und später mit dem eingeschränkten Directus-Build-Token verbunden werden.
+Die GitHub Action in `.github/workflows/check.yml` prüft nur den Build. Sie veröffentlicht nichts. Der VPS baut die Vorschau alle fünf Minuten aus veröffentlichten Directus-Inhalten; Frontend-Codeänderungen benötigen weiterhin eine Aktualisierung der Quellkopie auf dem VPS.
 
-Die Schritte zum Bereitstellen der statischen Dateien und zur DNS-Umstellung stehen im Backend-Repository unter `server/directus/README.md`. Die Hauptdomain erst nach Prüfung von Inhalt, Bildrechten, Impressum und Datenschutz umstellen.
+Die Schritte zum Bereitstellen der statischen Dateien und zur DNS-Umstellung stehen im Backend-Repository unter `server/directus/README.md`. URL-Umschreibung und VPS-Härtung sind dort unter `server/security/README.md` beschrieben. Die Hauptdomain erst nach Prüfung von Inhalt, Bildrechten, Impressum und Datenschutz umstellen.
 
 ## Lokale Vorschau
 
-Die Website ist rein statisch. Jeder einfache Webserver im Projektordner reicht, zum Beispiel:
+Die Website ist rein statisch, verwendet aber extensionlose Links. Die vollständige Navigation deshalb über die Caddy-Vorschau auf dem VPS testen. Ein einfacher lokaler Dateiserver ohne Rewrite-Regeln liefert `/galerie` nicht aus:
 
 ```bash
 python -m http.server 4173 --directory dist
@@ -62,3 +62,5 @@ npm run build
 ```
 
 Der Build verwendet ohne gesetzte Umgebungsvariablen die lokalen Fallback-Inhalte. Der anschließende Prüfer kontrolliert Seitentitel, Meta Descriptions, H1-Struktur, JSON-LD, Bildattribute und interne Dateiverweise.
+
+Solange Galerie, Pakete oder Blog im CMS noch keine veroeffentlichten Eintraege haben, kann `DIRECTUS_FALLBACK_EMPTY=1` fuer einen Directus-Build gesetzt werden. Nur leere dieser drei Collections erhalten dann lokale Fallback-Inhalte; die Startseite muss aus Directus kommen. Nach der Inhaltsmigration diese Uebergangsvariable entfernen, damit fehlende Inhalte den Build sichtbar stoppen.
