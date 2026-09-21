@@ -1,0 +1,73 @@
+{
+  "gallery": [
+    {"sort": 1, "category": "hochzeit", "title": "Einladung & Umschlag", "description": "Feine Linien, reduzierte Farben und ein persönliches Detail.", "image": "assets/papeterie-event.jpeg", "image_alt": "Einladungskarte mit illustriertem Zweig", "image_class": "reference-event"},
+    {"sort": 2, "category": "hochzeit", "title": "Tagespapeterie", "description": "Tischnummern, Menükarte und Sitzplan als stimmige Familie.", "swatch_class": "botanical"},
+    {"sort": 3, "category": "event", "title": "Bar & Etiketten", "description": "Kleine Details für Flaschen, Gastgeschenke und die Bar.", "swatch_class": "dark"},
+    {"sort": 4, "category": "kollektion", "title": "Olive Kollektion", "description": "Ein vorbereitetes Design, individuell mit Namen, Datum und Farbe.", "swatch_class": ""},
+    {"sort": 5, "category": "event", "title": "Geburtstagsset", "description": "Einladung, Tischkarte und kleines Schild für besondere Runden.", "swatch_class": "clay"},
+    {"sort": 6, "category": "kollektion", "title": "Für Dich Kollektion", "description": "Sanfte Töne und klare Typografie für viele Anlässe.", "image": "assets/papeterie-welcome.jpeg", "image_alt": "Papeteriedetail mit Aufschrift für Dich", "image_class": "reference-welcome"}
+  ],
+  "packages": [
+    {"sort": 1, "kicker": "Start", "title": "Einladung", "description": "Für den ersten Eindruck und alle wichtigen Informationen.", "features": ["Save-the-Date oder Einladung", "Passende Umschlaggestaltung", "Eine Abstimmungsschleife", "Druckfertige Daten"], "cta_label": "Einladung anfragen", "featured": false},
+    {"sort": 2, "kicker": "Beliebt", "title": "Hochzeitstag", "description": "Alles, was am Tag selbst sichtbar zusammengehören soll.", "features": ["Menü- und Getränkekarten", "Tischnummern und Sitzplan", "Willkommensschild", "Kleine Hinweisschilder"], "cta_label": "Hochzeitstag anfragen", "featured": true},
+    {"sort": 3, "kicker": "Komplett", "title": "Roter Faden", "description": "Vom ersten Umschlag bis zur letzten Dankeskarte aus einem Guss.", "features": ["Einladung und Tagespapeterie", "Farb- und Schriftkonzept", "Dankeskarte", "Gemeinsame Produktionstimeline"], "cta_label": "Gesamtkonzept anfragen", "featured": false}
+  ],
+  "posts": [
+    {
+      "status": "published",
+      "title": "Welche Papeterie braucht eine Hochzeit wirklich?",
+      "slug": "hochzeitspapeterie-planen",
+      "category": "Planungshilfe",
+      "excerpt": "Eine ehrliche Reihenfolge: Was wichtig ist, was schön ist und was ohne schlechtes Gewissen warten kann.",
+      "meta_title": "Welche Hochzeitspapeterie braucht man wirklich? | himmelsteil",
+      "meta_description": "Praktische Übersicht: Welche Papeterie für eine Hochzeit wichtig ist, was optional bleibt und wann Einladung, Tagespapeterie und Dankeskarte geplant werden sollten.",
+      "published_at": "2026-09-20",
+      "reading_minutes": 6,
+      "sections": [
+        {"lead": "Zwischen Save-the-Date, Sitzplan und Freudentränen-Taschentuch kann die Liste schnell lang werden. Entscheidend ist nicht die Menge, sondern ein klarer roter Faden an den Stellen, an denen eure Gäste Informationen brauchen."},
+        {"heading": "Die drei wirklich wichtigen Phasen", "subsections": [{"heading": "1. Vor der Hochzeit", "paragraph": "Die Einladung ist das wichtigste Stück. Sie nennt Datum, Ort, Uhrzeit und Rückmeldefrist. Ein Save-the-Date lohnt sich vor allem bei vielen Gästen mit längerer Anreise, in der Ferienzeit oder bei einer Destination Wedding."}, {"heading": "2. Am Hochzeitstag", "paragraph": "Am Tag selbst sollte Papeterie Orientierung geben. Ein Sitzplan, Tischnummern und Menü- oder Getränkekarten sind besonders nützlich. Namenskarten sind sinnvoll, wenn feste Sitzplätze vorgesehen sind."}, {"heading": "3. Nach der Feier", "paragraph": "Eine Dankeskarte schließt das Gestaltungskonzept ab. Ein gemeinsames Hochzeitsfoto und ein persönlicher Satz sind oft wirkungsvoller als viele zusätzliche Details."}]},
+        {"callout": "Faustregel: Erst Orientierung und Information sichern. Danach kommen die dekorativen Extras, die zu euch und eurem Budget passen."},
+        {"heading": "Was optional bleiben darf", "list": ["Kirchenhefte, wenn der Ablauf bereits gut begleitet wird", "Separate Programmfächer, wenn das Programm auf einem Schild steht", "Gastgeschenk-Anhänger ohne konkrete Information", "Mehrere Schilder mit derselben Botschaft"]},
+        {"heading": "So entsteht ein stimmiges Gesamtbild", "paragraphs": ["Wiederkehrende Schriften, Farben und ein Motiv reichen meist aus. Nicht jedes Element muss identisch aussehen. Ein gutes Konzept lässt genug Spielraum und bleibt trotzdem als zusammengehörig erkennbar."]}
+      ]
+    },
+    {
+      "status": "published",
+      "title": "Budgetfreundlich planen, ohne beliebig zu wirken",
+      "slug": "papeterie-budget",
+      "category": "Budget & Gestaltung",
+      "excerpt": "Kollektionen, kleine Individualisierungen und kluge Druckentscheidungen für einen stimmigen Auftritt.",
+      "meta_title": "Hochzeitspapeterie budgetfreundlich planen | himmelsteil",
+      "meta_description": "So bleibt Hochzeitspapeterie hochwertig und persönlich, ohne das Budget zu sprengen: Prioritäten, Kollektionen, Papierwahl und Druck clever planen.",
+      "published_at": "2026-09-12",
+      "reading_minutes": 5,
+      "sections": [
+        {"lead": "Ein begrenztes Budget verlangt nicht nach einer beliebigen Lösung. Ein konsequentes Konzept und einige bewusste Entscheidungen haben meist mehr Wirkung als viele Veredelungen."},
+        {"heading": "Prioritäten vor Produkten", "paragraphs": ["Legt zuerst fest, welche Informationen eure Gäste wirklich auf Papier benötigen. Einladung, Sitzplan und Tischkennzeichnung stehen häufig weiter oben als zusätzliche Anhänger."]},
+        {"heading": "Kollektion oder individuelles Design?", "paragraphs": ["Eine vorbereitete Kollektion spart Gestaltungszeit. Namen, Datum, Wortlaut und ausgewählte Farben lassen sich trotzdem anpassen. Ein individuelles Konzept lohnt sich, wenn ein besonderes Motiv oder eine persönliche Illustration im Mittelpunkt stehen soll."]},
+        {"heading": "Druckentscheidungen mit großer Wirkung", "list": ["Ein gutes Naturpapier wirkt auch ohne Folienprägung hochwertig.", "Wenige Formate reduzieren Abstimmung und Produktionsaufwand.", "Standardumschläge sind günstiger und in vielen Farben erhältlich.", "Eine gemeinsame Druckrunde ist effizienter als viele Nachbestellungen."]},
+        {"callout": "Spartipp: Investiert in ein starkes Grundlayout und ein passendes Papier. Beides ist auf jedem Element sichtbar."},
+        {"heading": "Die Stückzahl realistisch berechnen", "paragraphs": ["Einladungen werden meist pro Haushalt oder Paar verschickt, nicht pro Gast. Für Tagespapeterie lohnt sich dagegen eine kleine Reserve."]}
+      ]
+    },
+    {
+      "status": "published",
+      "title": "Farben für Taufe, Kommunion und Geburtstag",
+      "slug": "farben-anlaesse",
+      "category": "Farbe & Anlass",
+      "excerpt": "Wie sich Motive und Materialien auch jenseits der Hochzeit persönlich und zeitgemäß einsetzen lassen.",
+      "meta_title": "Farben für Taufe, Kommunion & Geburtstag | himmelsteil",
+      "meta_description": "Farbideen für Papeterie zu Taufe, Kommunion und Geburtstag: harmonische Paletten entwickeln und Farben passend zu Ort, Jahreszeit und Persönlichkeit wählen.",
+      "published_at": "2026-09-04",
+      "reading_minutes": 5,
+      "sections": [
+        {"lead": "Ein Anlass braucht keine festgelegte Standardfarbe. Viel persönlicher wird die Papeterie, wenn Ort, Jahreszeit und die Menschen, die feiern, den Ausgangspunkt bilden."},
+        {"heading": "Mit einer Grundstimmung beginnen", "paragraphs": ["Überlegt zuerst, wie sich das Fest anfühlen soll: leicht und ruhig, farbenfroh und lebendig oder natürlich und zurückhaltend."]},
+        {"heading": "Drei einfache Wege zur Farbpalette", "ordered_list": ["Ton in Ton: Mehrere Abstufungen einer Farbe wirken ruhig und sicher.", "Natur plus Akzent: Creme, Papierweiß oder sanftes Grün werden mit einer kräftigeren Farbe ergänzt.", "Zwei Gegenspieler: Eine warme und eine kühle Farbe schaffen Spannung, solange eine davon dominiert."]},
+        {"heading": "Der Ort darf mitentscheiden", "paragraphs": ["In einem hellen Raum funktionieren weiche Farben anders als in einer dunklen Gaststube oder im Garten. Fotos der Location und vorhandene Tischwäsche helfen, Farbkonflikte zu vermeiden."]},
+        {"callout": "Guter Ausgangspunkt: Wählt eine Hauptfarbe, eine ruhige Basis und höchstens eine Akzentfarbe."},
+        {"heading": "Motive sparsam einsetzen", "paragraphs": ["Ein Zweig, eine kleine Blüte oder ein persönliches Symbol kann die Palette verbinden. Eine reduzierte Illustration wirkt auch auf Erinnerungsstücken zeitlos."]}
+      ]
+    }
+  ]
+}

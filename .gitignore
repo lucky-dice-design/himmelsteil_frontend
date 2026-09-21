@@ -1,0 +1,7 @@
+.env
+.env.*
+!.env.example
+dist/assets/cms/
+server/directus/backups/
+himmelsteil_backend/
+.openai/

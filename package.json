@@ -1,0 +1,9 @@
+{
+  "name": "himmelsteil-papeterie",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-directus-site.mjs && node scripts/check-site.mjs",
+    "check": "node scripts/check-site.mjs"
+  }
+}
