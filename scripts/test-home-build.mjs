@@ -32,6 +32,8 @@ try {
     home_occasions: homeOccasions,
     legal_pages: [{ slug: "impressum", title: "Impressum & Kontakt", seo_description: "CMS Rechtstext" }],
     legal_sections: [{ page: "impressum", sort: 1, heading: "Kontakt <Test>", body: "Zeile eins\nZeile zwei\n\n<script>verboten</script>" }],
+    contact_form: { ...fallback.contact_form, intro_title: "Kontakt & <CMS>", submit_label: "Jetzt anfragen" },
+    contact_options: [{ sort: 1, label: "Freie Feier & Fest" }],
   };
 
   process.env.DIRECTUS_URL = "https://directus-test.invalid";
@@ -43,7 +45,7 @@ try {
     assert.equal(options?.headers?.Authorization, "Bearer test-token");
     const collection = url.pathname.split("/")[2];
     assert.ok(Object.hasOwn(items, collection), `Unexpected collection: ${collection}`);
-    if (collection !== "home_page") {
+    if (!new Set(["home_page", "contact_form"]).has(collection)) {
       assert.equal(url.searchParams.get("filter[status][_eq]"), "published");
     }
     return new Response(JSON.stringify({ data: items[collection] }), {
@@ -74,6 +76,10 @@ try {
   assert.match(imprintHtml, /content="CMS Rechtstext"/);
   const privacyHtml = await fs.readFile(path.join(tempRoot, "dist", "datenschutz.html"), "utf8");
   assert.match(privacyHtml, /<h1>Datenschutz<\/h1>/);
+  const contactHtml = await fs.readFile(path.join(tempRoot, "dist", "kontakt.html"), "utf8");
+  assert.match(contactHtml, /<h1>Kontakt &amp; &lt;CMS&gt;<\/h1>/);
+  assert.match(contactHtml, /<option>Freie Feier &amp; Fest<\/option>/);
+  assert.match(contactHtml, />Jetzt anfragen<\/button>/);
   await assert.rejects(fs.access(path.join(tempRoot, "dist", "blog-alter-entwurf.html")), { code: "ENOENT" });
   console.log("Directus-Startseitenbuild geprueft.");
 } finally {

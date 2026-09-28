@@ -9,13 +9,13 @@
   <meta property="og:title" content="Papeterie anfragen | himmelsteil Weilheim"><meta property="og:description" content="Erzähl uns von deinem Anlass und der Papeterie, die entstehen soll.">
   <meta name="twitter:card" content="summary"><link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Nunito+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css?v=7">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Nunito+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css?v=8">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
       "name": "himmelsteil Papeterie",
-      "email": "hallo@himmelsteil.de",
+      "email": "info@himmelsteil.de",
       "address": {
         "@type": "PostalAddress",
         "streetAddress": "Paradeisstr. 7",
@@ -33,23 +33,30 @@
     <nav id="main-nav" class="main-nav" aria-label="Hauptnavigation"><a href="/">Start</a><a href="/galerie">Galerie</a><a href="/pakete">Pakete</a><a href="/blog">Blog</a><a href="/kontakt" aria-current="page">Kontakt</a></nav>
   </header>
   <main>
-    <section class="page-intro container">
+    <section class="page-intro container"><!-- CMS:CONTACT_INTRO:START -->
       <div><p class="eyebrow">Deine Anfrage</p><h1>Lass uns etwas Schönes gestalten.</h1><p>Erzähl kurz vom Anlass, der gewünschten Papeterie und eurem Zeitrahmen. Eine erste Rückmeldung folgt in der Regel innerhalb weniger Werktage.</p></div>
       <div class="page-intro-visual reference-crop"><img class="reference-event" src="assets/papeterie-event.jpeg" width="843" height="1600" decoding="async" fetchpriority="high" alt="Individuelle Einladung als Beispiel für eine Anfrage"></div>
+      <!-- CMS:CONTACT_INTRO:END -->
     </section>
     <section class="section container contact-layout" aria-labelledby="kontakt-title">
-      <div class="contact-copy"><p class="eyebrow">Kontakt</p><h2 id="kontakt-title">Worum geht es?</h2><p>Das Formular öffnet dein E-Mail-Programm mit den Angaben. So funktioniert die Anfrage zum Start ohne zusätzliche laufende Kosten.</p><address>Anna Dahlenburg<br>himmelsteil Papeterie<br>Paradeisstr. 7<br>82362 Weilheim<br><br><a href="mailto:hallo@himmelsteil.de">hallo@himmelsteil.de</a></address></div>
-      <form class="contact-form" action="mailto:hallo@himmelsteil.de" method="post" enctype="text/plain">
-        <label>Name<input name="Name" autocomplete="name" required></label>
-        <label>E-Mail<input name="E-Mail" type="email" autocomplete="email" required></label>
-        <label>Anlass<select name="Anlass"><option>Hochzeit</option><option>Taufe / Kommunion</option><option>Geburtstag / Event</option><option>Business</option><option>Anderes Projekt</option></select></label>
-        <label>Gewünschter Zeitraum<input name="Zeitraum" placeholder="z. B. Juni 2027"></label>
-        <label>Nachricht<textarea name="Nachricht" rows="6" required></textarea></label>
-        <button class="button primary" type="submit">Anfrage per E-Mail senden</button>
+      <!-- CMS:CONTACT_FORM:START -->
+      <div class="contact-copy"><p class="eyebrow">Kontakt</p><h2 id="kontakt-title">Worum geht es?</h2><p>Schick uns deine Anfrage direkt über das Formular. Die Angaben werden ausschließlich zur Bearbeitung deiner Anfrage verwendet.</p><address>Anna Dahlenburg<br>himmelsteil Papeterie<br>Paradeisstr. 7<br>82362 Weilheim<br><br><a href="mailto:info@himmelsteil.de">info@himmelsteil.de</a></address></div>
+      <form class="contact-form" action="/api/contact" method="post" data-contact-form data-sending-message="Anfrage wird gesendet …" data-success-message="Danke! Deine Anfrage wurde gesendet." data-error-message="Die Anfrage konnte nicht gesendet werden. Bitte versuche es erneut oder schreibe uns direkt eine E-Mail.">
+        <label>Name<input name="name" autocomplete="name" maxlength="100" required></label>
+        <label>E-Mail<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+        <label>Anlass<select name="occasion" required><option value="">Bitte auswählen</option><option>Hochzeit</option><option>Taufe / Kommunion</option><option>Geburtstag / Event</option><option>Business</option><option>Anderes Projekt</option></select></label>
+        <label>Gewünschter Zeitraum<input name="timeframe" maxlength="100" placeholder="z. B. Juni 2027"></label>
+        <label>Nachricht<textarea name="message" rows="6" maxlength="5000" required></textarea></label>
+        <div class="form-trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+        <label class="consent"><input name="consent" type="checkbox" required><span>Ich stimme zu, dass meine Angaben zur Bearbeitung der Anfrage verarbeitet werden. Weitere Informationen stehen im <a href="/datenschutz">Datenschutz</a>.</span></label>
+        <button class="button primary" type="submit">Anfrage senden</button>
+        <p class="form-status" data-form-status role="status" aria-live="polite"></p>
+        <noscript><p>Für das Formular ist JavaScript erforderlich. Alternativ erreichst du uns unter <a href="mailto:info@himmelsteil.de">info@himmelsteil.de</a>.</p></noscript>
       </form>
+      <!-- CMS:CONTACT_FORM:END -->
     </section>
   </main>
   <footer class="site-footer"><div class="site-footer-inner container"><p>© himmelsteil Papeterie 2026</p><div class="footer-links"><a href="/kontakt">Kontakt</a><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a></div></div></footer>
-  <script src="script.js?v=3"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>

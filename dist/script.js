@@ -55,3 +55,57 @@ filters.forEach((filter) => {
     }
   });
 });
+
+const contactForm = document.querySelector("[data-contact-form]");
+const contactStatus = document.querySelector("[data-form-status]");
+let contactStartedAt = Date.now();
+let contactRequestId = crypto.randomUUID();
+
+contactForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!contactForm.reportValidity()) return;
+
+  const submitButton = contactForm.querySelector('button[type="submit"]');
+  const formData = new FormData(contactForm);
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 15_000);
+  submitButton.disabled = true;
+  contactForm.setAttribute("aria-busy", "true");
+  contactStatus.textContent = contactForm.dataset.sendingMessage;
+  contactStatus.className = "form-status";
+
+  try {
+    const response = await fetch(contactForm.action, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: formData.get("name"),
+        email: formData.get("email"),
+        occasion: formData.get("occasion"),
+        timeframe: formData.get("timeframe"),
+        message: formData.get("message"),
+        website: formData.get("website"),
+        consent: formData.get("consent") === "on",
+        startedAt: contactStartedAt,
+        requestId: contactRequestId,
+      }),
+      signal: controller.signal,
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || "Die Anfrage konnte nicht gesendet werden.");
+    contactStatus.textContent = contactForm.dataset.successMessage;
+    contactStatus.classList.add("is-success");
+    contactForm.reset();
+    contactStartedAt = Date.now();
+    contactRequestId = crypto.randomUUID();
+  } catch (error) {
+    contactStatus.textContent = error.name === "AbortError"
+      ? "Der Versand dauert zu lange. Bitte versuche es erneut oder schreibe uns direkt eine E-Mail."
+      : error instanceof TypeError ? contactForm.dataset.errorMessage : error.message || contactForm.dataset.errorMessage;
+    contactStatus.classList.add("is-error");
+  } finally {
+    window.clearTimeout(timeout);
+    submitButton.disabled = false;
+    contactForm.removeAttribute("aria-busy");
+  }
+});

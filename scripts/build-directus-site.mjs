@@ -85,7 +85,7 @@ async function loadContent() {
   }
 
   console.log(`Lade veröffentlichte Inhalte aus ${directusUrl}`);
-  const [gallery, packages, posts, homePage, homeTiles, homeOccasions, legalPages, legalSections] = await Promise.all([
+  const [gallery, packages, posts, homePage, homeTiles, homeOccasions, legalPages, legalSections, contactForm, contactOptions] = await Promise.all([
     readCollection(
       "gallery_items",
       ["id", "sort", "category", "title", "description", "image.id", "image_alt", "swatch_class"],
@@ -110,6 +110,14 @@ async function loadContent() {
     readCollection("home_occasions", ["id", "sort", "title", "description"], "sort"),
     readCollection("legal_pages", ["id", "slug", "title", "seo_description"], "slug"),
     readCollection("legal_sections", ["id", "sort", "page", "heading", "body"], "sort"),
+    readSingleton("contact_form", [
+      "seo_title", "seo_description", "intro_eyebrow", "intro_title", "intro_body", "intro_image.id",
+      "intro_image_alt", "contact_eyebrow", "contact_title", "contact_body", "contact_details", "contact_email",
+      "name_label", "email_label", "occasion_label", "occasion_placeholder", "timeframe_label",
+      "timeframe_placeholder", "message_label", "consent_label", "submit_label", "sending_message",
+      "success_message", "error_message",
+    ]),
+    readCollection("contact_options", ["id", "sort", "label"], "sort"),
   ]);
 
   const useFallback = (name, items) => {
@@ -126,6 +134,8 @@ async function loadContent() {
     home_occasions: homeOccasions,
     legal_pages: legalPages,
     legal_sections: legalSections,
+    contact_form: contactForm,
+    contact_options: contactOptions,
   };
 }
 
@@ -210,6 +220,51 @@ function renderLegalPage(page, sections) {
   return `<p class="eyebrow">Rechtliches</p><h1>${escapeHtml(page.title)}</h1>${ownSections.map((section) =>
     `<h2>${escapeHtml(section.heading)}</h2>${paragraphs(section.body)}`
   ).join("\n        ")}`;
+}
+
+function validateContact(page, options) {
+  const required = [
+    "seo_title", "seo_description", "intro_eyebrow", "intro_title", "intro_body", "intro_image_alt",
+    "contact_eyebrow", "contact_title", "contact_body", "contact_details", "contact_email", "name_label",
+    "email_label", "occasion_label", "occasion_placeholder", "timeframe_label", "timeframe_placeholder",
+    "message_label", "consent_label", "submit_label", "sending_message", "success_message", "error_message",
+  ];
+  for (const field of required) {
+    if (!String(page?.[field] || "").trim()) throw new Error(`Kontaktformular: ${field} fehlt.`);
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(page.contact_email)) {
+    throw new Error("Kontaktformular: ungueltige Kontakt-E-Mail-Adresse.");
+  }
+  if (!options.length || options.some((option) => !option.label?.trim())) {
+    throw new Error("Kontaktformular: mindestens eine vollstaendige Anlassoption erforderlich.");
+  }
+}
+
+async function renderContactIntro(page) {
+  const fallbackImage = fallback.contact_form.intro_image;
+  const imagePath = await downloadHomeImage(page.intro_image || fallbackImage, "contact", 1200, 1200);
+  const reference = imagePath === fallbackImage;
+  return `<div><p class="eyebrow">${escapeHtml(page.intro_eyebrow)}</p><h1>${escapeHtml(page.intro_title)}</h1>${paragraphs(page.intro_body)}</div>
+      <div class="page-intro-visual${reference ? " reference-crop" : ""}"><img${reference ? ' class="reference-event"' : ""} src="${escapeHtml(imagePath)}" width="${reference ? 843 : 1200}" height="${reference ? 1600 : 1200}" decoding="async" fetchpriority="high" alt="${escapeHtml(page.intro_image_alt)}"></div>`;
+}
+
+function renderContactForm(page, options) {
+  const optionMarkup = [...options].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+    .map((option) => `<option>${escapeHtml(option.label)}</option>`).join("");
+  const details = escapeHtml(page.contact_details).replaceAll(/\r?\n/g, "<br>");
+  return `<div class="contact-copy"><p class="eyebrow">${escapeHtml(page.contact_eyebrow)}</p><h2 id="kontakt-title">${escapeHtml(page.contact_title)}</h2>${paragraphs(page.contact_body)}<address>${details}<br><br><a href="mailto:${escapeHtml(page.contact_email)}">${escapeHtml(page.contact_email)}</a></address></div>
+      <form class="contact-form" action="/api/contact" method="post" data-contact-form data-sending-message="${escapeHtml(page.sending_message)}" data-success-message="${escapeHtml(page.success_message)}" data-error-message="${escapeHtml(page.error_message)}">
+        <label>${escapeHtml(page.name_label)}<input name="name" autocomplete="name" maxlength="100" required></label>
+        <label>${escapeHtml(page.email_label)}<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+        <label>${escapeHtml(page.occasion_label)}<select name="occasion" required><option value="">${escapeHtml(page.occasion_placeholder)}</option>${optionMarkup}</select></label>
+        <label>${escapeHtml(page.timeframe_label)}<input name="timeframe" maxlength="100" placeholder="${escapeHtml(page.timeframe_placeholder)}"></label>
+        <label>${escapeHtml(page.message_label)}<textarea name="message" rows="6" maxlength="5000" required></textarea></label>
+        <div class="form-trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+        <label class="consent"><input name="consent" type="checkbox" required><span>${escapeHtml(page.consent_label)} Weitere Informationen stehen im <a href="/datenschutz">Datenschutz</a>.</span></label>
+        <button class="button primary" type="submit">${escapeHtml(page.submit_label)}</button>
+        <p class="form-status" data-form-status role="status" aria-live="polite"></p>
+        <noscript><p>Für das Formular ist JavaScript erforderlich. Alternativ erreichst du uns unter <a href="mailto:${escapeHtml(page.contact_email)}">${escapeHtml(page.contact_email)}</a>.</p></noscript>
+      </form>`;
 }
 
 async function renderHomeHero(page) {
@@ -396,17 +451,31 @@ async function updateLegalSeo(slug, page) {
   await fs.writeFile(filePath, html);
 }
 
+async function updateContactSeo(page) {
+  const filePath = path.join(distDir, "kontakt.html");
+  let html = await fs.readFile(filePath, "utf8");
+  html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(page.seo_title)}</title>`);
+  html = html.replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${escapeHtml(page.seo_description)}">`);
+  html = html.replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${escapeHtml(page.seo_title)}">`);
+  html = html.replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${escapeHtml(page.seo_description)}">`);
+  await fs.writeFile(filePath, html);
+}
+
 const content = await loadContent();
 if (!content.gallery.length || !content.packages.length || !content.posts.length) {
   throw new Error("Mindestens eine CMS-Collection enthält keine veröffentlichten Einträge.");
 }
 validateHome(content);
+validateContact(content.contact_form, content.contact_options);
 
 await replaceBlock("index.html", "HOME_HERO", await renderHomeHero(content.home_page));
 await replaceBlock("index.html", "HOME_TILES", await renderHomeTiles(content.home_tiles));
 await replaceBlock("index.html", "HOME_INTRO", renderHomeIntro(content.home_page));
 await replaceBlock("index.html", "HOME_OCCASIONS", renderHomeOccasions(content.home_page, content.home_occasions));
 await updateHomeSeo(content.home_page);
+await replaceBlock("kontakt.html", "CONTACT_INTRO", await renderContactIntro(content.contact_form));
+await replaceBlock("kontakt.html", "CONTACT_FORM", renderContactForm(content.contact_form, content.contact_options));
+await updateContactSeo(content.contact_form);
 
 await replaceBlock("galerie.html", "GALLERY", await renderGallery(content.gallery));
 await replaceBlock("pakete.html", "PACKAGES", renderPackages(content.packages));

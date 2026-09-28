@@ -22,6 +22,8 @@ Statische Mehrseiten-Website für eine Design- und Papeterie-Marke mit Fokus auf
 
 GitHub dient als Versionsverwaltung und führt nur die Build-Prüfung aus. Das Frontend wird nicht über GitHub Pages veröffentlicht. Directus wird nur beim Build angesprochen; Besucher erhalten statische Dateien. Die Serverkonfiguration liegt im separaten Repository `himmelsteil_backend`.
 
+Das Kontaktformular sendet über einen kleinen, ausschließlich intern erreichbaren Dienst auf dem VPS. Caddy leitet `/api/contact` weiter; SMTP-Zugangsdaten werden nie an den Browser oder in dieses Repository ausgeliefert.
+
 Das Datenmodell und die VPS-Einrichtung sind im separaten Repository `himmelsteil_backend` dokumentiert. Die Startseite nutzt dort `home_page`, `home_tiles` und `home_occasions`; Linkziele und Layout bleiben im Frontend fest. Der Cron-basierte Vorschau-Build liegt unter `himmelsteil_backend/server/preview/`; er wird auf dem VPS eingerichtet und veröffentlicht nur die geschützte Vorschau.
 
 ## SEO und KI-Crawler
