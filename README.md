@@ -20,7 +20,7 @@ Statische Mehrseiten-Website für eine Design- und Papeterie-Marke mit Fokus auf
 - Fallback: Ohne Directus-Zugang baut die Website aus `content/cms-fallback.json`.
 - Shop später: als getrenntes Modul evaluieren, ohne die CMS-Struktur zu blockieren.
 
-GitHub dient als Versionsverwaltung und führt nur die Build-Prüfung aus. Das Frontend wird nicht über GitHub Pages veröffentlicht. Directus wird nur beim Build angesprochen; Besucher erhalten statische Dateien. Die Serverkonfiguration liegt im separaten Repository `himmelsteil_backend`.
+GitHub dient als Versionsverwaltung. Der vorbereitete Actions-Workflow prüft Änderungen und kann nach Einrichtung des VPS-Zugangs automatisch deployen (siehe `deploy/README.md`). Das Frontend wird nicht über GitHub Pages veröffentlicht. Directus wird nur beim Build angesprochen; Besucher erhalten statische Dateien. Die Serverkonfiguration liegt im separaten Repository `himmelsteil_backend`.
 
 Das Kontaktformular sendet über einen kleinen, ausschließlich intern erreichbaren Dienst auf dem VPS. Caddy leitet `/api/contact` weiter; SMTP-Zugangsdaten werden nie an den Browser oder in dieses Repository ausgeliefert.
 
@@ -45,7 +45,7 @@ Das Datenmodell und die VPS-Einrichtung sind im separaten Repository `himmelstei
 
 ## Deployment auf dem VPS
 
-Die GitHub Action in `.github/workflows/check.yml` prüft nur den Build. Sie veröffentlicht nichts. Der VPS baut die Vorschau alle fünf Minuten aus veröffentlichten Directus-Inhalten; Frontend-Codeänderungen benötigen weiterhin eine Aktualisierung der Quellkopie auf dem VPS.
+Die GitHub Action in `.github/workflows/deploy.yml` prüft Änderungen. Nach der einmaligen Einrichtung gemäß `deploy/README.md` überträgt sie erfolgreiche Hauptbranch-Releases per SSH in die VPS-Buildquelle und führt den Vorschau-Build aus. Der VPS baut die Vorschau alle fünf Minuten aus veröffentlichten Directus-Inhalten; Frontend-Codeänderungen benötigen eine Aktualisierung der Quellkopie auf dem VPS; nach Aktivierung übernimmt dies der Workflow.
 
 Die Schritte zum Bereitstellen der statischen Dateien und zur DNS-Umstellung stehen im Backend-Repository unter `server/directus/README.md`. URL-Umschreibung und VPS-Härtung sind dort unter `server/security/README.md` beschrieben. Die Hauptdomain erst nach Prüfung von Inhalt, Bildrechten, Impressum und Datenschutz umstellen.
 
@@ -66,3 +66,7 @@ npm run build
 Der Build verwendet ohne gesetzte Umgebungsvariablen die lokalen Fallback-Inhalte. Der anschließende Prüfer kontrolliert Seitentitel, Meta Descriptions, H1-Struktur, JSON-LD, Bildattribute und interne Dateiverweise.
 
 Solange Galerie, Pakete oder Blog im CMS noch keine veroeffentlichten Eintraege haben, kann `DIRECTUS_FALLBACK_EMPTY=1` fuer einen Directus-Build gesetzt werden. Nur leere dieser drei Collections erhalten dann lokale Fallback-Inhalte; die Startseite muss aus Directus kommen. Nach der Inhaltsmigration diese Uebergangsvariable entfernen, damit fehlende Inhalte den Build sichtbar stoppen.
+
+## Automatisches VPS-Deployment
+
+Prüfungen und Deployment per GitHub Actions sind unter [deploy/README.md](deploy/README.md) beschrieben. Die einmalige Einrichtung auf GitHub und dem VPS ist vor der Aktivierung erforderlich.
