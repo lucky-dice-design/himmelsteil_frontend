@@ -160,7 +160,7 @@ async function downloadGalleryImage(item) {
   return `assets/cms/${fileName}`;
 }
 
-async function downloadHomeImage(image, key, width, height) {
+async function downloadHomeImage(image, key, width, height, fit = "cover") {
   if (!image) return null;
   if (typeof image === "string" && image.startsWith("assets/")) return image;
   const fileId = typeof image === "string" ? image : image.id;
@@ -170,7 +170,7 @@ async function downloadHomeImage(image, key, width, height) {
   const fileName = `home-${slugify(key)}-${fileId}.webp`;
   const outputDir = path.join(distDir, "assets", "cms");
   const response = await fetch(
-    `${directusUrl}/assets/${fileId}?width=${width}&height=${height}&fit=cover&format=webp&quality=82`,
+    `${directusUrl}/assets/${fileId}?width=${width}&height=${height}&fit=${fit}&format=webp&quality=82`,
     { headers: directusToken ? { Authorization: `Bearer ${directusToken}` } : {} }
   );
   if (!response.ok) throw new Error(`Directus Startseitenbild ${fileId}: ${response.status} ${response.statusText}`);
@@ -270,7 +270,7 @@ function renderContactForm(page, options) {
 async function renderHomeHero(page) {
   const fallbackImage = fallback.home_page.hero_image;
   const image = page.hero_image || fallbackImage;
-  const imagePath = await downloadHomeImage(image, "hero", 1800, 1350);
+  const imagePath = await downloadHomeImage(image, "hero", 1800, 1350, "inside");
   const reference = imagePath === fallbackImage;
   const imageClass = reference ? ' class="reference-event"' : "";
   return `<section class="hero container">

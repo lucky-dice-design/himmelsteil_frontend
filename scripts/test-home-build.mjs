@@ -17,7 +17,8 @@ try {
   await fs.mkdir(path.join(tempRoot, "content"));
   await fs.copyFile(path.join(root, "content", "cms-fallback.json"), path.join(tempRoot, "content", "cms-fallback.json"));
 
-  const homePage = { ...fallback.home_page, hero_title: "CMS & <Test>", seo_title: "CMS & <SEO>" };
+  const heroFileId = "11111111-2222-4333-8444-555555555555";
+  const homePage = { ...fallback.home_page, hero_title: "CMS & <Test>", seo_title: "CMS & <SEO>", hero_image: { id: heroFileId } };
   const homeTiles = fallback.home_tiles.map((tile) => ({ ...tile, image: null }));
   const homeOccasions = fallback.home_occasions.map((item) => ({ ...item }));
   homeOccasions[0].title = "Hochzeit & Feier";
@@ -43,6 +44,12 @@ try {
     const url = new URL(input);
     assert.equal(url.hostname, "directus-test.invalid");
     assert.equal(options?.headers?.Authorization, "Bearer test-token");
+    if (url.pathname === `/assets/${heroFileId}`) {
+      assert.equal(url.searchParams.get("fit"), "inside", "Das Hero-Motiv darf beim Download nicht beschnitten werden.");
+      assert.equal(url.searchParams.get("width"), "1800");
+      assert.equal(url.searchParams.get("height"), "1350");
+      return new Response("hero-image-fixture", { headers: { "Content-Type": "image/webp" } });
+    }
     const collection = url.pathname.split("/")[2];
     assert.ok(Object.hasOwn(items, collection), `Unexpected collection: ${collection}`);
     if (!new Set(["home_page", "contact_form"]).has(collection)) {
@@ -59,6 +66,8 @@ try {
   const html = await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8");
   assert.match(html, /<h1>CMS &amp; &lt;Test&gt;<\/h1>/);
   assert.match(html, /<title>CMS &amp; &lt;SEO&gt;<\/title>/);
+  assert.match(html, new RegExp(`src="assets/cms/home-hero-${heroFileId}\\.webp"`));
+  assert.equal(await fs.readFile(path.join(tempRoot, "dist", "assets", "cms", `home-hero-${heroFileId}.webp`), "utf8"), "hero-image-fixture");
   assert.match(html, /<h3>Hochzeit &amp; Feier<\/h3>/);
   assert.equal((html.match(/class="image-tile/g) || []).length, 3);
   assert.doesNotMatch(html, /<h1>Schönes auf Papier\.<\/h1>/);
