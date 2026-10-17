@@ -139,7 +139,7 @@ async function loadContent() {
       "success_message", "error_message",
     ]),
     readCollection("contact_options", ["id", "status", "sort", "label"], "sort"),
-    readSingleton("site_settings", Object.keys(fallback.site_settings)),
+    readSingleton("site_settings", Object.keys(fallback.site_settings).map((field) => field === "logo" ? "logo.id" : field)),
   ]);
 
   const useFallback = (name, items) => {
@@ -416,16 +416,22 @@ function siteLinks(links, currentPath = "") {
   }).join("");
 }
 
+function siteLogo() {
+  if (siteLogoPath) return `<span class="brand-mark custom-logo"><img src="${escapeHtml(siteLogoPath)}" width="640" height="320" decoding="async" alt="${escapeHtml(content.site_settings.logo_alt || content.site_settings.brand_name)}"></span>`;
+  return `<span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="29"></circle><path d="m12 42 14-16 9 10 5-7 12 13"></path><circle cx="47" cy="19" r="2"></circle></svg></span>`;
+}
+
 function siteHeader(currentPath = "/blog") {
   const settings = content.site_settings;
   for (const field of ["brand_name", "brand_home_label", "menu_label", "nav_label", "footer_text"]) {
     if (!String(settings?.[field] || "").trim()) throw new Error(`Website-Einstellungen: ${field} fehlt.`);
   }
-  return `<header class="site-header"><a class="brand" href="/" aria-label="${escapeHtml(settings.brand_home_label)}"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="29"></circle><path d="m12 42 14-16 9 10 5-7 12 13"></path><circle cx="47" cy="19" r="2"></circle></svg></span><span>${escapeHtml(settings.brand_name)}</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav"><span></span><span></span><span></span><span class="sr-only">${escapeHtml(settings.menu_label)}</span></button><nav id="main-nav" class="main-nav" aria-label="${escapeHtml(settings.nav_label)}">${siteLinks(settings.header_links, currentPath)}</nav></header>`;
+  return `<header class="site-header"><a class="brand" href="/" aria-label="${escapeHtml(settings.brand_home_label)}">${siteLogo()}<span>${escapeHtml(settings.brand_name)}</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav"><span></span><span></span><span></span><span class="sr-only">${escapeHtml(settings.menu_label)}</span></button><nav id="main-nav" class="main-nav" aria-label="${escapeHtml(settings.nav_label)}">${siteLinks(settings.header_links, currentPath)}</nav></header>`;
 }
 
 function siteFooter() {
-  return `<footer class="site-footer"><div class="site-footer-inner container"><p>${escapeHtml(content.site_settings.footer_text)}</p><div class="footer-links">${siteLinks(content.site_settings.footer_links)}</div></div></footer>`;
+  const logo = content.site_settings.show_footer_logo === true ? `<a class="brand footer-brand" href="/" aria-label="${escapeHtml(content.site_settings.brand_home_label)}">${siteLogo()}</a>` : "";
+  return `<footer class="site-footer"><div class="site-footer-inner container">${logo}<p>${escapeHtml(content.site_settings.footer_text)}</p><div class="footer-links">${siteLinks(content.site_settings.footer_links)}</div></div></footer>`;
 }
 
 function renderPostPage(post) {
@@ -509,6 +515,7 @@ async function updateContactSeo(page) {
 const content = await loadContent();
 validateHome(content);
 validateContact(content.contact_form, content.contact_options);
+const siteLogoPath = await downloadHomeImage(content.site_settings.logo, "site-logo", 640, 320, "inside");
 
 await replaceBlock("index.html", "HOME_HERO", await renderHomeHero(content.home_page));
 await replaceBlock("index.html", "HOME_TILES", await renderHomeTiles(content.home_tiles));
@@ -556,7 +563,7 @@ for (const file of (await fs.readdir(distDir)).filter((name) => name.endsWith(".
   const currentPath = file === "index.html" ? "/" : file.startsWith("blog-") ? "/blog" : `/${file.slice(0, -5)}`;
   html = html.replace(/<header class="site-header">[\s\S]*?<\/header>/, () => siteHeader(currentPath));
   html = html.replace(/<footer class="site-footer">[\s\S]*?<\/footer>/, () => siteFooter());
-  html = html.replace(/styles\.css\?v=\d+/g, "styles.css?v=9");
+  html = html.replace(/styles\.css\?v=\d+/g, "styles.css?v=10");
   html = html.replace(/<meta name="robots" content="[^"]*">/g, `<meta name="robots" content="${channel === "preview" ? "noindex,nofollow,noarchive" : "index,follow,max-image-preview:large"}">`);
   await fs.writeFile(filePath, html);
 }

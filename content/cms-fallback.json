@@ -1,5 +1,8 @@
 {
   "site_settings": {
+    "logo": null,
+    "logo_alt": "himmelsteil Papeterie",
+    "show_footer_logo": false,
     "brand_name": "himmelsteil Papeterie",
     "brand_home_label": "himmelsteil Papeterie Startseite",
     "menu_label": "Menü öffnen",
