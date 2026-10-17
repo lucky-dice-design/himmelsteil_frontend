@@ -14,6 +14,20 @@ Statische Mehrseiten-Website für eine Design- und Papeterie-Marke mit Fokus auf
 
 ## Architektur
 
+Neue CMS-Funktionen: Header und Footer werden gemeinsam in `site_settings` bearbeitet.
+Hero-, Kachel-, Galerie- und Kontaktbilder besitzen einen optionalen Copyright-Text
+mit einem separaten Schalter. `SITE_CHANNEL=preview` baut Live- und Preview-Inhalte;
+der Standard `SITE_CHANNEL=live` baut ausschließlich Live-Inhalte. Entwürfe bleiben
+unsichtbar. Die bisherige Kennung `published` wird während der Migration als Live behandelt.
+
+Die notwendige Directus-Migration und Einrichtung der getrennten Veröffentlichung
+stehen in `himmelsteil_backend/directus/WEBSITE-FEATURES.md`. Die neue Frontend-Version
+erst nach dieser Migration mit Directus bauen. Der öffentliche Caddy-VHost verwendet
+ein eigenes Verzeichnis, damit Preview-Inhalte nicht öffentlich ausgeliefert werden.
+Der private Live-Zwischenstand `.cms-live-state.json` enthält den letzten Live-Stand
+von Startseite, Kontakt und Header/Footer. Bei Preview-Änderungen bleibt dieser
+Stand öffentlich erhalten; er gehört nicht in `dist/` oder Git.
+
 - Frontend und Hosting: statische Mehrseiten-Website auf demselben IONOS VPS wie Directus, ausgeliefert von Caddy unter `himmelsteil.de`.
 - CMS: selbst gehostetes Directus auf dem IONOS VPS als geschütztes Redaktionssystem für Startseite, Galerie, Pakete, Blog und Rechtstexte.
 - Build: `scripts/build-directus-site.mjs` lädt Startseitentexte und veröffentlichte Einträge, erzeugt die Blogseiten und speichert CMS-Bilder lokal im Build-Artefakt.

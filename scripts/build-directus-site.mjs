@@ -7,6 +7,18 @@ const fallbackPath = path.join(projectRoot, "content", "cms-fallback.json");
 const directusUrl = process.env.DIRECTUS_URL?.replace(/\/$/, "");
 const directusToken = process.env.DIRECTUS_TOKEN?.trim();
 const allowEmptyFallback = process.env.DIRECTUS_FALLBACK_EMPTY === "1";
+const channel = process.env.SITE_CHANNEL || "live";
+if (!["live", "preview"].includes(channel)) throw new Error("SITE_CHANNEL muss live oder preview sein.");
+const visibleStatuses = channel === "preview" ? ["live", "published", "preview"] : ["live", "published"];
+const liveStatePath = path.resolve(process.env.CMS_LIVE_STATE_PATH || ".cms-live-state.json");
+if (liveStatePath === distDir || liveStatePath.startsWith(`${distDir}${path.sep}`)) {
+  throw new Error("Der Live-Zwischenstand darf nicht im oeffentlichen dist-Verzeichnis liegen.");
+}
+let liveState = {};
+if (directusUrl && channel === "live") {
+  try { liveState = JSON.parse(await fs.readFile(liveStatePath, "utf8")); }
+  catch (error) { if (error.code !== "ENOENT") throw error; }
+}
 const fallback = JSON.parse(await fs.readFile(fallbackPath, "utf8"));
 
 if (directusUrl && (!directusToken || !/^[\x21-\x7e]+$/.test(directusToken))) {
@@ -51,7 +63,7 @@ const assertSafePostSlug = (slug) => {
 
 async function readCollection(collection, fields, sort) {
   const query = new URLSearchParams({
-    "filter[status][_eq]": "published",
+    "filter[status][_in]": visibleStatuses.join(","),
     fields: fields.join(","),
     limit: "100",
     sort,
@@ -64,18 +76,24 @@ async function readCollection(collection, fields, sort) {
   }
   const payload = await response.json();
   if (!Array.isArray(payload.data)) throw new Error(`Directus ${collection}: ungültige Antwort`);
-  return payload.data;
+  return payload.data.filter((item) => visibleStatuses.includes(item.status));
 }
 
 async function readSingleton(collection, fields) {
-  const query = new URLSearchParams({ fields: fields.join(",") });
+  const query = new URLSearchParams({ fields: ["status", ...fields].join(",") });
   const response = await fetch(`${directusUrl}/items/${collection}?${query}`, {
     headers: directusToken ? { Authorization: `Bearer ${directusToken}` } : {},
   });
   if (!response.ok) throw await directusError(response, collection);
   const payload = await response.json();
   if (!payload.data || Array.isArray(payload.data)) throw new Error(`Directus ${collection}: ungültige Singleton-Antwort`);
-  return payload.data;
+  if (channel === "preview" && visibleStatuses.includes(payload.data.status)) return payload.data;
+  if (["live", "published"].includes(payload.data.status)) {
+    liveState[collection] = payload.data;
+    return payload.data;
+  }
+  if (channel === "live" && liveState[collection]) return liveState[collection];
+  throw new Error(`${collection}: kein Live-Stand vorhanden. Zuerst einmal mit Status Live bauen.`);
 }
 
 async function loadContent() {
@@ -84,44 +102,45 @@ async function loadContent() {
     return fallback;
   }
 
-  console.log(`Lade veröffentlichte Inhalte aus ${directusUrl}`);
-  const [gallery, packages, posts, homePage, homeTiles, homeOccasions, legalPages, legalSections, contactForm, contactOptions] = await Promise.all([
+  console.log(`Lade ${channel}-Inhalte aus ${directusUrl}`);
+  const [gallery, packages, posts, homePage, homeTiles, homeOccasions, legalPages, legalSections, contactForm, contactOptions, siteSettings] = await Promise.all([
     readCollection(
       "gallery_items",
-      ["id", "sort", "category", "title", "description", "image.id", "image_alt", "swatch_class"],
+      ["id", "status", "sort", "category", "title", "description", "image.id", "image_alt", "image_copyright", "show_image_copyright", "swatch_class"],
       "sort"
     ),
     readCollection(
       "packages",
-      ["id", "sort", "kicker", "title", "description", "features", "cta_label", "featured"],
+      ["id", "status", "sort", "kicker", "title", "description", "features", "cta_label", "featured"],
       "sort"
     ),
     readCollection(
       "posts",
-      ["id", "title", "slug", "category", "excerpt", "meta_title", "meta_description", "published_at", "reading_minutes", "sections"],
+      ["id", "status", "title", "slug", "category", "excerpt", "meta_title", "meta_description", "published_at", "reading_minutes", "sections"],
       "-published_at"
     ),
     readSingleton("home_page", [
       "seo_title", "seo_description", "hero_eyebrow", "hero_title", "hero_body", "hero_image.id",
-      "hero_image_alt", "hero_primary_label", "hero_secondary_label", "intro_eyebrow", "intro_title",
+      "hero_image_alt", "hero_image_copyright", "show_hero_image_copyright", "hero_primary_label", "hero_secondary_label", "intro_eyebrow", "intro_title",
       "intro_body", "intro_link_label", "occasions_eyebrow", "occasions_title",
     ]),
-    readCollection("home_tiles", ["id", "sort", "destination", "label", "image.id", "image_alt"], "sort"),
-    readCollection("home_occasions", ["id", "sort", "title", "description"], "sort"),
-    readCollection("legal_pages", ["id", "slug", "title", "seo_description"], "slug"),
-    readCollection("legal_sections", ["id", "sort", "page", "heading", "body"], "sort"),
+    readCollection("home_tiles", ["id", "status", "sort", "destination", "label", "image.id", "image_alt", "image_copyright", "show_image_copyright"], "sort"),
+    readCollection("home_occasions", ["id", "status", "sort", "title", "description"], "sort"),
+    readCollection("legal_pages", ["id", "status", "slug", "title", "seo_description"], "slug"),
+    readCollection("legal_sections", ["id", "status", "sort", "page", "heading", "body"], "sort"),
     readSingleton("contact_form", [
       "seo_title", "seo_description", "intro_eyebrow", "intro_title", "intro_body", "intro_image.id",
-      "intro_image_alt", "contact_eyebrow", "contact_title", "contact_body", "contact_details", "contact_email",
+      "intro_image_alt", "intro_image_copyright", "show_intro_image_copyright", "contact_eyebrow", "contact_title", "contact_body", "contact_details", "contact_email",
       "name_label", "email_label", "occasion_label", "occasion_placeholder", "timeframe_label",
       "timeframe_placeholder", "message_label", "consent_label", "submit_label", "sending_message",
       "success_message", "error_message",
     ]),
-    readCollection("contact_options", ["id", "sort", "label"], "sort"),
+    readCollection("contact_options", ["id", "status", "sort", "label"], "sort"),
+    readSingleton("site_settings", Object.keys(fallback.site_settings)),
   ]);
 
   const useFallback = (name, items) => {
-    if (items.length || !allowEmptyFallback) return items;
+    if (items.length || !allowEmptyFallback || channel === "live") return items;
     console.warn(`Directus ${name} ist leer: voruebergehend Fallback-Inhalt verwendet.`);
     return fallback[name];
   };
@@ -136,6 +155,7 @@ async function loadContent() {
     legal_sections: legalSections,
     contact_form: contactForm,
     contact_options: contactOptions,
+    site_settings: siteSettings,
   };
 }
 
@@ -190,15 +210,14 @@ function validateHome(content) {
     if (!String(page?.[field] || "").trim()) throw new Error(`Startseite: ${field} fehlt.`);
   }
   const destinations = content.home_tiles.map((tile) => tile.destination);
-  if (destinations.length !== 3 || new Set(destinations).size !== 3 ||
-      !["galerie", "pakete", "blog"].every((target) => destinations.includes(target))) {
-    throw new Error("Startseite: genau eine veröffentlichte Kachel für Galerie, Pakete und Blog erforderlich.");
+  if (new Set(destinations).size !== destinations.length ||
+      destinations.some((target) => !["galerie", "pakete", "blog"].includes(target))) {
+    throw new Error("Startseite: Kachelziele muessen eindeutig Galerie, Pakete oder Blog sein.");
   }
   for (const tile of content.home_tiles) {
     if (!tile.label) throw new Error(`Startseite: Kachel ${tile.destination} ohne Beschriftung.`);
     if (tile.image && !tile.image_alt) throw new Error(`Startseite: Kachel ${tile.destination} ohne Bildbeschreibung.`);
   }
-  if (!content.home_occasions.length) throw new Error("Startseite: mindestens ein veröffentlichter Anlass erforderlich.");
   for (const occasion of content.home_occasions) {
     if (!occasion.title || !occasion.description) throw new Error("Startseite: Anlass ohne Titel oder Beschreibung.");
   }
@@ -206,6 +225,12 @@ function validateHome(content) {
 
 function paragraphs(value) {
   return String(value).split(/\n\s*\n/).filter(Boolean).map((part) => `<p>${escapeHtml(part.trim()).replaceAll(/\r?\n/g, "<br>")}</p>`).join("\n        ");
+}
+
+function captionedImage(markup, item, prefix = "image", className = "") {
+  const text = String(item[`${prefix}_copyright`] || "").trim();
+  if (item[`show_${prefix}_copyright`] !== true || !text) return markup;
+  return `<figure class="credited-image ${className}">${markup}<figcaption class="image-copyright"><small><i>${escapeHtml(text)}</i></small></figcaption></figure>`;
 }
 
 function renderLegalPage(page, sections) {
@@ -245,7 +270,7 @@ async function renderContactIntro(page) {
   const imagePath = await downloadHomeImage(page.intro_image || fallbackImage, "contact", 1200, 1200);
   const reference = imagePath === fallbackImage;
   return `<div><p class="eyebrow">${escapeHtml(page.intro_eyebrow)}</p><h1>${escapeHtml(page.intro_title)}</h1>${paragraphs(page.intro_body)}</div>
-      <div class="page-intro-visual${reference ? " reference-crop" : ""}"><img${reference ? ' class="reference-event"' : ""} src="${escapeHtml(imagePath)}" width="${reference ? 843 : 1200}" height="${reference ? 1600 : 1200}" decoding="async" fetchpriority="high" alt="${escapeHtml(page.intro_image_alt)}"></div>`;
+      ${captionedImage(`<div class="page-intro-visual${reference ? " reference-crop" : ""}"><img${reference ? ' class="reference-event"' : ""} src="${escapeHtml(imagePath)}" width="${reference ? 843 : 1200}" height="${reference ? 1600 : 1200}" decoding="async" fetchpriority="high" alt="${escapeHtml(page.intro_image_alt)}"></div>`, page, "intro_image")}`;
 }
 
 function renderContactForm(page, options) {
@@ -274,7 +299,7 @@ async function renderHomeHero(page) {
   const reference = imagePath === fallbackImage;
   const imageClass = reference ? ' class="reference-event"' : "";
   return `<section class="hero container">
-      <div class="hero-media${reference ? " reference-crop" : ""}"><img${imageClass} src="${escapeHtml(imagePath)}" width="${reference ? 843 : 1800}" height="${reference ? 1600 : 1350}" decoding="async" fetchpriority="high" alt="${escapeHtml(page.hero_image_alt)}"></div>
+      ${captionedImage(`<div class="hero-media${reference ? " reference-crop" : ""}"><img${imageClass} src="${escapeHtml(imagePath)}" width="${reference ? 843 : 1800}" height="${reference ? 1600 : 1350}" decoding="async" fetchpriority="high" alt="${escapeHtml(page.hero_image_alt)}"></div>`, page, "hero_image")}
       <div class="hero-copy"><p class="eyebrow">${escapeHtml(page.hero_eyebrow)}</p><h1>${escapeHtml(page.hero_title)}</h1>${paragraphs(page.hero_body)}<div class="hero-actions"><a class="button primary" href="/kontakt">${escapeHtml(page.hero_primary_label)}</a><a class="button secondary" href="/galerie">${escapeHtml(page.hero_secondary_label)}</a></div></div>
     </section>`;
 }
@@ -291,7 +316,8 @@ async function renderHomeTiles(tiles) {
     const imageMarkup = imagePath
       ? `<img${reference ? ` class="${escapeHtml(fallbackTile.image_class)}"` : ""} src="${escapeHtml(imagePath)}" width="${reference ? 843 : 1200}" height="${reference ? 1600 : 1200}" loading="lazy" decoding="async" alt="${escapeHtml(tile.image_alt || fallbackTile?.image_alt)}">`
       : "";
-    cards.push(`<a class="${classes}" href="${hrefs[tile.destination]}">${imageMarkup}<span>${escapeHtml(tile.label)}</span></a>`);
+    const link = `<a class="${classes}" href="${hrefs[tile.destination]}">${imageMarkup}<span>${escapeHtml(tile.label)}</span></a>`;
+    cards.push(imagePath ? captionedImage(link, tile) : link);
   }
   return `<section class="home-links container" aria-label="Websitebereiche">${cards.join("\n      ")}</section>`;
 }
@@ -304,6 +330,7 @@ function renderHomeIntro(page) {
 }
 
 function renderHomeOccasions(page, items) {
+  if (!items.length) return "";
   const cards = [...items].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
     .map((item) => `<div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p></div>`)
     .join("\n          ");
@@ -326,7 +353,7 @@ async function renderGallery(items) {
       const swatch = item.swatch_class ? ` ${escapeHtml(item.swatch_class)}` : "";
       media = `<div class="paper-swatch${swatch}" aria-hidden="true"></div>`;
     }
-    cards.push(`        <article class="gallery-card" data-category="${escapeHtml(item.category)}">${media}<div class="gallery-card-body"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p></div></article>`);
+    cards.push(`        <article class="gallery-card" data-category="${escapeHtml(item.category)}">${imagePath ? captionedImage(media, item) : media}<div class="gallery-card-body"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p></div></article>`);
   }
   return cards.join("\n");
 }
@@ -375,12 +402,27 @@ function renderSections(sections, excerpt, slug) {
     .join("\n        ");
 }
 
-function siteHeader() {
-  return `<header class="site-header"><a class="brand" href="/" aria-label="himmelsteil Papeterie Startseite"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="29"></circle><path d="m12 42 14-16 9 10 5-7 12 13"></path><circle cx="47" cy="19" r="2"></circle></svg></span><span>himmelsteil Papeterie</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav"><span></span><span></span><span></span><span class="sr-only">Menü öffnen</span></button><nav id="main-nav" class="main-nav" aria-label="Hauptnavigation"><a href="/">Start</a><a href="/galerie">Galerie</a><a href="/pakete">Pakete</a><a href="/blog" aria-current="page">Blog</a><a href="/kontakt">Kontakt</a></nav></header>`;
+function siteLinks(links, currentPath = "") {
+  if (!Array.isArray(links) || !links.length) throw new Error("Website-Einstellungen: mindestens ein Link erforderlich.");
+  return links.map((link) => {
+    if (!link || !String(link.label || "").trim() ||
+        !/^\/(?!\/)[a-z0-9/-]*(?:#[a-z0-9-]+)?$/.test(link.href)) {
+      throw new Error("Website-Einstellungen: Link benoetigt eine Beschriftung und einen internen Pfad (z. B. /kontakt).");
+    }
+    return `<a href="${escapeHtml(link.href)}"${link.href === currentPath ? ' aria-current="page"' : ""}>${escapeHtml(link.label)}</a>`;
+  }).join("");
+}
+
+function siteHeader(currentPath = "/blog") {
+  const settings = content.site_settings;
+  for (const field of ["brand_name", "brand_home_label", "menu_label", "nav_label", "footer_text"]) {
+    if (!String(settings?.[field] || "").trim()) throw new Error(`Website-Einstellungen: ${field} fehlt.`);
+  }
+  return `<header class="site-header"><a class="brand" href="/" aria-label="${escapeHtml(settings.brand_home_label)}"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="29"></circle><path d="m12 42 14-16 9 10 5-7 12 13"></path><circle cx="47" cy="19" r="2"></circle></svg></span><span>${escapeHtml(settings.brand_name)}</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav"><span></span><span></span><span></span><span class="sr-only">${escapeHtml(settings.menu_label)}</span></button><nav id="main-nav" class="main-nav" aria-label="${escapeHtml(settings.nav_label)}">${siteLinks(settings.header_links, currentPath)}</nav></header>`;
 }
 
 function siteFooter() {
-  return `<footer class="site-footer"><div class="site-footer-inner container"><p>© himmelsteil Papeterie 2026</p><div class="footer-links"><a href="/kontakt">Kontakt</a><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a></div></div></footer>`;
+  return `<footer class="site-footer"><div class="site-footer-inner container"><p>${escapeHtml(content.site_settings.footer_text)}</p><div class="footer-links">${siteLinks(content.site_settings.footer_links)}</div></div></footer>`;
 }
 
 function renderPostPage(post) {
@@ -462,9 +504,6 @@ async function updateContactSeo(page) {
 }
 
 const content = await loadContent();
-if (!content.gallery.length || !content.packages.length || !content.posts.length) {
-  throw new Error("Mindestens eine CMS-Collection enthält keine veröffentlichten Einträge.");
-}
 validateHome(content);
 validateContact(content.contact_form, content.contact_options);
 
@@ -484,9 +523,9 @@ await replaceBlock("blog.html", "POSTS", renderPostCards(content.posts));
 for (const slug of ["impressum", "datenschutz"]) {
   const pages = content.legal_pages.filter((page) => page.slug === slug);
   if (pages.length > 1) throw new Error(`Doppelter Rechtstext: ${slug}`);
-  if (!pages.length) continue;
-  await replaceBlock(`${slug}.html`, "LEGAL_CONTENT", renderLegalPage(pages[0], content.legal_sections));
-  await updateLegalSeo(slug, pages[0]);
+  const page = pages[0] || { slug, title: slug === "impressum" ? "Impressum" : "Datenschutz", seo_description: "Rechtliche Informationen von himmelsteil Papeterie." };
+  await replaceBlock(`${slug}.html`, "LEGAL_CONTENT", pages.length ? renderLegalPage(page, content.legal_sections) : `<h1>${escapeHtml(page.title)}</h1><p>Dieser Inhalt ist derzeit nicht veröffentlicht.</p>`);
+  await updateLegalSeo(slug, page);
 }
 
 const galleryPath = path.join(distDir, "galerie.html");
@@ -507,5 +546,18 @@ for (const file of await fs.readdir(distDir)) {
     await fs.unlink(path.join(distDir, file));
   }
 }
+
+for (const file of (await fs.readdir(distDir)).filter((name) => name.endsWith(".html"))) {
+  const filePath = path.join(distDir, file);
+  let html = await fs.readFile(filePath, "utf8");
+  const currentPath = file === "index.html" ? "/" : file.startsWith("blog-") ? "/blog" : `/${file.slice(0, -5)}`;
+  html = html.replace(/<header class="site-header">[\s\S]*?<\/header>/, () => siteHeader(currentPath));
+  html = html.replace(/<footer class="site-footer">[\s\S]*?<\/footer>/, () => siteFooter());
+  html = html.replace(/styles\.css\?v=\d+/g, "styles.css?v=9");
+  html = html.replace(/<meta name="robots" content="[^"]*">/g, `<meta name="robots" content="${channel === "preview" ? "noindex,nofollow,noarchive" : "index,follow,max-image-preview:large"}">`);
+  await fs.writeFile(filePath, html);
+}
+
+if (directusUrl && channel === "live") await fs.writeFile(liveStatePath, JSON.stringify(liveState));
 
 console.log(`Startseite, ${content.gallery.length} Galerieeinträge, ${content.packages.length} Pakete und ${content.posts.length} Beiträge gebaut.`);

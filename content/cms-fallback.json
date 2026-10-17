@@ -1,4 +1,23 @@
 {
+  "site_settings": {
+    "brand_name": "himmelsteil Papeterie",
+    "brand_home_label": "himmelsteil Papeterie Startseite",
+    "menu_label": "Menü öffnen",
+    "nav_label": "Hauptnavigation",
+    "header_links": [
+      { "label": "Start", "href": "/" },
+      { "label": "Galerie", "href": "/galerie" },
+      { "label": "Pakete", "href": "/pakete" },
+      { "label": "Blog", "href": "/blog" },
+      { "label": "Kontakt", "href": "/kontakt" }
+    ],
+    "footer_text": "© himmelsteil Papeterie 2026",
+    "footer_links": [
+      { "label": "Kontakt", "href": "/kontakt" },
+      { "label": "Impressum", "href": "/impressum" },
+      { "label": "Datenschutz", "href": "/datenschutz" }
+    ]
+  },
   "legal_pages": [],
   "legal_sections": [],
   "contact_form": {
