@@ -162,6 +162,12 @@ try {
   process.env.CMS_LIVE_STATE_PATH = path.join(tempRoot, "missing-state.json");
   items.home_page.status = "preview";
   await assert.rejects(import("./build-directus-site.mjs?missing-state"), /kein Live-Stand vorhanden/);
+  const successfulFetch = global.fetch;
+  global.fetch = (input, options) => new URL(input).pathname === "/items/site_settings"
+    ? Promise.resolve(new Response(JSON.stringify({ errors: [{ message: "Forbidden" }] }), { status: 403 }))
+    : successfulFetch(input, options);
+  process.env.SITE_CHANNEL = "preview";
+  await assert.rejects(import("./build-directus-site.mjs?missing-migration"), /setup-website-features\.sh/);
   console.log("CMS-Build geprueft: Header/Footer, Bildnachweise, Live/Preview und Live-Zwischenstand.");
 } finally {
   process.chdir(root);
