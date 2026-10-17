@@ -50,6 +50,9 @@ const formatDate = (value) =>
   }).format(new Date(`${value}T12:00:00Z`));
 
 async function directusError(response, collection) {
+  if (collection === "site_settings" && [403, 404].includes(response.status)) {
+    return new Error("Directus site_settings fehlt oder ist fuer den Build nicht lesbar. Zuerst das aktuelle Backend deployen und auf dem VPS 'sudo bash /opt/himmelsteil-cms/setup-website-features.sh' ausfuehren; danach den Frontend-Workflow erneut starten.");
+  }
   const payload = await response.json().catch(() => ({}));
   const detail = payload.errors?.[0]?.extensions?.reason || payload.errors?.[0]?.message || response.statusText;
   return new Error(`Directus ${collection}: ${response.status} ${detail}`);
