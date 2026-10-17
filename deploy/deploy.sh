@@ -56,6 +56,11 @@ install -m 0644 "$src/package.json" "$source_dir/package.json"
 flock -u 8
 /usr/local/sbin/himmelsteil-preview-build --dry-run
 /usr/local/sbin/himmelsteil-preview-build
+# Live publication is enabled only after the initial verified Live build.
+if [[ -f /var/lib/himmelsteil-publication/live-singletons.json ]]; then
+  /usr/local/sbin/himmelsteil-preview-build --live --dry-run
+  /usr/local/sbin/himmelsteil-preview-build --live
+fi
 # Test the shared proxy and both CMS backends, including TLS and host routing.
 for domain in admin.himmelsteil.de admin.luckydicedesign.de; do
   result=$(curl --silent --show-error --fail --retry 8 --retry-connrefused --retry-delay 2 --max-time 10 \

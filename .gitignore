@@ -5,3 +5,4 @@ dist/assets/cms/
 server/directus/backups/
 himmelsteil_backend/
 .openai/
+.cms-live-state.json
