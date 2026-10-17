@@ -68,6 +68,8 @@ button, input, select, textarea { font: inherit; }
 }
 
 .brand-mark { display: grid; width: 52px; height: 52px; place-items: center; }
+.brand-mark.custom-logo { width: 104px; flex: 0 0 auto; }
+.custom-logo img { width: 100%; height: 100%; object-fit: contain; }
 .brand-mark svg {
   width: 52px;
   height: 52px;
@@ -564,7 +566,7 @@ textarea { resize: vertical; }
   :root { --gutter: 18px; }
   .site-header { min-height: 72px; }
   .brand-mark, .brand-mark svg { width: 46px; height: 46px; }
-  .brand > span:last-child { display: none; }
+  .site-header .brand > span:last-child { display: none; }
   .main-nav { top: 72px; }
   .hero { gap: 30px; padding-block: 34px 54px; }
   h1 { font-size: clamp(3rem, 15vw, 4.4rem); }

@@ -21,6 +21,8 @@ try {
   await fs.copyFile(path.join(root, "content", "cms-fallback.json"), path.join(tempRoot, "content", "cms-fallback.json"));
 
   const heroFileId = "11111111-2222-4333-8444-555555555555";
+  const logoFileId = "22222222-3333-4444-8555-666666666666";
+  let logoDownloads = 0;
   const homePage = { ...fallback.home_page, hero_title: "CMS & <Test>", seo_title: "CMS & <SEO>", hero_image: { id: heroFileId }, hero_image_copyright: "© Anna & <Foto>", show_hero_image_copyright: true };
   const homeTiles = fallback.home_tiles.map((tile) => ({ ...tile, image: null }));
   const homeOccasions = fallback.home_occasions.map((item) => ({ ...item }));
@@ -38,7 +40,7 @@ try {
     legal_sections: [{ page: "impressum", sort: 1, heading: "Kontakt <Test>", body: "Zeile eins\nZeile zwei\n\n<script>verboten</script>" }],
     contact_form: { ...fallback.contact_form, intro_title: "Kontakt & <CMS>", submit_label: "Jetzt anfragen" },
     contact_options: [{ sort: 1, label: "Freie Feier & Fest" }],
-    site_settings: { ...fallback.site_settings, brand_name: "CMS & Marke", footer_text: "© CMS <Footer>" },
+    site_settings: { ...fallback.site_settings, brand_name: "CMS & Marke", footer_text: "© CMS <Footer>", logo: { id: logoFileId }, logo_alt: "Logo & <Marke>", show_footer_logo: true },
   };
   for (const [name, data] of Object.entries(items)) {
     if (Array.isArray(data)) items[name] = data.map((item) => ({ ...item, status: "live" }));
@@ -59,6 +61,13 @@ try {
     const url = new URL(input);
     assert.equal(url.hostname, "directus-test.invalid");
     assert.equal(options?.headers?.Authorization, "Bearer test-token");
+    if (url.pathname === `/assets/${logoFileId}`) {
+      logoDownloads++;
+      assert.equal(url.searchParams.get("fit"), "inside", "Ein Logo darf nicht beschnitten werden.");
+      assert.equal(url.searchParams.get("width"), "640");
+      assert.equal(url.searchParams.get("height"), "320");
+      return new Response("logo-image-fixture", { headers: { "Content-Type": "image/webp" } });
+    }
     if (url.pathname === `/assets/${heroFileId}`) {
       assert.equal(url.searchParams.get("fit"), "inside", "Das Hero-Motiv darf beim Download nicht beschnitten werden.");
       assert.equal(url.searchParams.get("width"), "1800");
@@ -78,6 +87,7 @@ try {
 
   process.chdir(tempRoot);
   await import("./build-directus-site.mjs");
+  assert.equal(logoDownloads, 1, "Das gemeinsame Logo wird nur einmal pro Build geladen.");
   const html = await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8");
   assert.match(html, /<h1>CMS &amp; &lt;Test&gt;<\/h1>/);
   assert.match(html, /<title>CMS &amp; &lt;SEO&gt;<\/title>/);
@@ -96,6 +106,8 @@ try {
     const page = await fs.readFile(path.join(tempRoot, "dist", file), "utf8");
     assert.match(page, /<span>CMS &amp; Marke<\/span>/);
     assert.match(page, /© CMS &lt;Footer&gt;/);
+    assert.equal((page.match(/class="brand-mark custom-logo"/g) || []).length, 2, `Logo in Header und Footer: ${file}`);
+    assert.match(page, /alt="Logo &amp; &lt;Marke&gt;"/);
   }
   const packagesHtml = await fs.readFile(path.join(tempRoot, "dist", "pakete.html"), "utf8");
   assert.match(packagesHtml, /Einladung anfragen/);
@@ -130,11 +142,14 @@ try {
   items.home_page.hero_title = "Nur in Preview geändert";
   items.site_settings.status = "preview";
   items.site_settings.brand_name = "Preview-Marke";
+  items.site_settings.logo = null;
+  items.site_settings.show_footer_logo = false;
   items.home_tiles[0].status = "preview";
   items.legal_pages[0].status = "preview";
   await import("./build-directus-site.mjs?live-snapshot");
   const liveHtml = await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8");
   assert.match(liveHtml, /<h1>CMS &amp; &lt;Test&gt;<\/h1>/);
+  assert.match(liveHtml, new RegExp(`home-site-logo-${logoFileId}\\.webp`), "Das Live-Logo bleibt bei einer Preview-Aenderung erhalten.");
   assert.doesNotMatch(liveHtml, /Nur in Preview geändert|Preview-Marke|© Kachel/);
   assert.match(liveHtml, /<a href="\/" aria-current="page">Start<\/a>/);
   assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "impressum.html"), "utf8"), /Kontakt &lt;Test&gt;/, "Rechtstext darf nicht aus dem vorherigen Build stehen bleiben.");
@@ -144,6 +159,8 @@ try {
   const previewHtml = await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8");
   assert.match(previewHtml, /Nur in Preview geändert/);
   assert.match(previewHtml, /Preview-Marke/);
+  assert.doesNotMatch(previewHtml, /custom-logo|footer-brand/);
+  assert.match(previewHtml, /<svg viewBox="0 0 64 64">/);
   assert.equal(await fs.readFile(process.env.CMS_LIVE_STATE_PATH, "utf8"), stateBeforePreview);
   assert.doesNotMatch((await fs.readdir(path.join(tempRoot, "dist"))).join(","), /live-state|singletons/);
   items.home_page.status = "live";

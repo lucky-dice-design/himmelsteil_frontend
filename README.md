@@ -15,6 +15,9 @@ Statische Mehrseiten-Website für eine Design- und Papeterie-Marke mit Fokus auf
 ## Architektur
 
 Neue CMS-Funktionen: Header und Footer werden gemeinsam in `site_settings` bearbeitet.
+Ein eigenes Logo kann dort aus dem Ordner `Website` hochgeladen/ausgewählt werden.
+Es erscheint im Header und optional über `show_footer_logo` auch im Footer.
+Ohne Logo-Datei bleibt das bisherige Symbol sichtbar; `logo_alt` beschreibt das Bild.
 Hero-, Kachel-, Galerie- und Kontaktbilder besitzen einen optionalen Copyright-Text
 mit einem separaten Schalter. `SITE_CHANNEL=preview` baut Live- und Preview-Inhalte;
 der Standard `SITE_CHANNEL=live` baut ausschließlich Live-Inhalte. Entwürfe bleiben
