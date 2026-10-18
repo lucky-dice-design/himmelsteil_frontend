@@ -1,5 +1,11 @@
 # GitHub Actions → VPS
 
+Der abgesicherte Einstiegspunkt benötigt den root-eigenen Prüfer
+`/usr/local/libexec/lucky-verify-release`. Der installierte Host-Buildjob benötigt
+zusätzlich `/usr/local/libexec/lucky-verify-publication`. Beide werden vor der
+Umstellung getrennt geprüft und installiert; die Einrichtung ist im separaten
+Himmelsteil-Backend unter `deploy/RESTRICTED-SSH.md` beschrieben.
+
 `/.github/workflows/deploy.yml` prüft jeden Push und Pull Request. Nur nach
 bestandenen Prüfungen auf `main` wird deployt; ein Merge löst den normalen
 Push-Workflow aus. `workflow_dispatch` erlaubt einen erneuten Lauf auf diesem
