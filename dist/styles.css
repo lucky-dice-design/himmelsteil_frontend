@@ -582,3 +582,4 @@ textarea { resize: vertical; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
+.page-intro.page-intro-no-image { grid-template-columns: 1fr; }

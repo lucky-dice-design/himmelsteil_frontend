@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import vm from "node:vm";
 
 const root = process.cwd();
 const fallback = JSON.parse(await fs.readFile(path.join(root, "content", "cms-fallback.json"), "utf8"));
@@ -13,6 +14,40 @@ const originalToken = process.env.DIRECTUS_TOKEN;
 const originalFallbackFlag = process.env.DIRECTUS_FALLBACK_EMPTY;
 const originalChannel = process.env.SITE_CHANNEL;
 const originalStatePath = process.env.CMS_LIVE_STATE_PATH;
+
+// Exercise the browser handlers with CMS labels and real click state changes.
+function element(attributes = {}, dataset = {}) {
+  const values = new Map(Object.entries(attributes));
+  const classes = new Set((attributes.class || "").split(" "));
+  return {
+    dataset, listeners: {}, textContent: "", hidden: false,
+    classList: { contains: (name) => classes.has(name), add: (name) => classes.add(name), remove: (name) => classes.delete(name), toggle: (name, on) => on ? classes.add(name) : classes.delete(name) },
+    getAttribute: (name) => values.get(name), setAttribute: (name, value) => values.set(name, value),
+    addEventListener(name, handler) { this.listeners[name] = handler; },
+  };
+}
+const menu = element({}, { openLabel: "Navigation öffnen", closeLabel: "Navigation schließen" });
+const menuText = element();
+menu.querySelector = () => menuText;
+const nav = element();
+const status = element({}, { resultsMessage: "{count} Motive sichtbar" });
+const buttons = [element({ "data-filter": "all", class: "filter is-active" }), element({ "data-filter": "event", class: "filter" })];
+const cards = [element({ "data-category": "event" }), element({ "data-category": "hochzeit" })];
+vm.runInNewContext(await fs.readFile(path.join(root, "dist", "script.js"), "utf8"), {
+  document: { querySelector: (selector) => ({ ".menu-toggle": menu, ".main-nav": nav, "[data-gallery-status]": status })[selector] || null, querySelectorAll: (selector) => selector === "[data-filter]" ? buttons : cards, addEventListener() {} },
+  crypto: { randomUUID: () => "test-id" },
+});
+menu.listeners.click();
+assert.equal(menuText.textContent, "Navigation schließen");
+menu.listeners.click();
+assert.equal(menuText.textContent, "Navigation öffnen");
+buttons[1].listeners.click();
+assert.equal(status.textContent, "1 Motive sichtbar");
+assert.equal(cards[1].hidden, true);
+assert.equal(buttons[1].getAttribute("aria-pressed"), "true");
+buttons[0].listeners.click();
+assert.equal(status.textContent, "2 Motive sichtbar");
+assert.ok(cards.every((card) => !card.hidden));
 
 try {
   await fs.cp(path.join(root, "dist"), path.join(tempRoot, "dist"), { recursive: true });
@@ -26,6 +61,7 @@ try {
   let heroBytes = "hero-image-fixture";
   let galleryBytes = "gallery-image-fixture";
   const galleryFileId = "33333333-4444-4555-8666-777777777777";
+  const introFileId = "44444444-5555-4666-8777-888888888888";
   const homePage = { ...fallback.home_page, hero_title: "CMS & <Test>", seo_title: "CMS & <SEO>", hero_image: { id: heroFileId }, hero_image_copyright: "© Anna & <Foto>", show_hero_image_copyright: true };
   const homeTiles = fallback.home_tiles.map((tile) => ({ ...tile, image: null }));
   const homeOccasions = fallback.home_occasions.map((item) => ({ ...item }));
@@ -33,6 +69,9 @@ try {
   const posts = fallback.posts.map((post) => ({ ...post }));
   posts[0].sections = null;
   const items = {
+    gallery_page: { ...structuredClone(fallback.gallery_page), intro_title: "Galerie & <CMS>", intro_image: { id: introFileId }, intro_image_copyright: "© Galerie-Foto", show_intro_image_copyright: true, filter_label: "Arbeiten filtern", results_message: "{count} Motive sichtbar" },
+    packages_page: { ...structuredClone(fallback.packages_page), seo_title: "Pakete $& <CMS>", details_title: "Persönlich & <passend>", details_cta_label: "Mehr erfahren" },
+    blog_page: { ...structuredClone(fallback.blog_page), read_label: "Weiterlesen & entdecken", section_title: "Atelier-Neuigkeiten", contact_cta_label: "Mit uns sprechen" },
     gallery_items: fallback.gallery,
     packages: [],
     posts,
@@ -81,9 +120,13 @@ try {
     if (url.pathname === `/assets/${galleryFileId}`) {
       return new Response(galleryBytes, { headers: { "Content-Type": "image/webp" } });
     }
+    if (url.pathname === `/assets/${introFileId}`) {
+      assert.equal(url.searchParams.get("width"), "1200");
+      return new Response("page-intro-fixture", { headers: { "Content-Type": "image/webp" } });
+    }
     const collection = url.pathname.split("/")[2];
     assert.ok(Object.hasOwn(items, collection), `Unexpected collection: ${collection}`);
-    if (!new Set(["home_page", "contact_form", "site_settings"]).has(collection)) {
+    if (!new Set(["home_page", "contact_form", "site_settings", "gallery_page", "packages_page", "blog_page"]).has(collection)) {
       assert.equal(url.searchParams.get("filter[status][_in]"), process.env.SITE_CHANNEL === "preview" ? "live,published,preview" : "live,published");
     }
     return new Response(JSON.stringify({ data: items[collection] }), {
@@ -110,7 +153,7 @@ try {
   assert.match(html, /<small><i>© Kachel<\/i><\/small>/);
   assert.match(html, /content="noindex,nofollow,noarchive"/);
   const galleryHtml = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
-  assert.doesNotMatch(galleryHtml, /Ausgeschalteter Bildnachweis|<figcaption/);
+  assert.doesNotMatch(galleryHtml.match(/<!-- CMS:GALLERY:START -->[\s\S]*?<!-- CMS:GALLERY:END -->/)[0], /Ausgeschalteter Bildnachweis|<figcaption/);
   for (const file of (await fs.readdir(path.join(tempRoot, "dist"))).filter((name) => name.endsWith(".html"))) {
     const page = await fs.readFile(path.join(tempRoot, "dist", file), "utf8");
     assert.match(page, /<span>CMS &amp; Marke<\/span>/);
@@ -138,6 +181,21 @@ try {
   assert.match(contactHtml, /<small><i>© Kontaktfoto<\/i><\/small>/);
   await assert.rejects(fs.access(path.join(tempRoot, "dist", "blog-alter-entwurf.html")), { code: "ENOENT" });
   await fs.access(path.join(tempRoot, "dist", "blog-nur-preview.html"));
+  const galleryPageHtml = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
+  assert.match(galleryPageHtml, /<h1>Galerie &amp; &lt;CMS&gt;<\/h1>/);
+  assert.match(galleryPageHtml, /© Galerie-Foto/);
+  assert.match(galleryPageHtml, /aria-label="Arbeiten filtern"/);
+  assert.match(galleryPageHtml, /6 Motive sichtbar/);
+  assert.match(galleryPageHtml, new RegExp(`home-gallery-page-${introFileId}-[a-f0-9]{12}\\.webp`));
+  const packagesPageHtml = await fs.readFile(path.join(tempRoot, "dist", "pakete.html"), "utf8");
+  assert.match(packagesPageHtml, /<title>Pakete \$&amp; &lt;CMS&gt;<\/title>/);
+  assert.match(packagesPageHtml, /Persönlich &amp; &lt;passend&gt;/);
+  assert.match(packagesPageHtml, />Mehr erfahren<\/a>/);
+  const blogPageHtml = await fs.readFile(path.join(tempRoot, "dist", "blog.html"), "utf8");
+  assert.match(blogPageHtml, /Atelier-Neuigkeiten/);
+  assert.match(blogPageHtml, /Weiterlesen &amp; entdecken/);
+  const articleHtml = await fs.readFile(path.join(tempRoot, "dist", `blog-${posts[0].slug}.html`), "utf8");
+  assert.match(articleHtml, /Mit uns sprechen/);
 
   // Replacing a file under the same Directus ID must invalidate cached image URLs.
   const firstGalleryHtml = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
@@ -157,8 +215,8 @@ try {
   assert.equal(await fs.readFile(path.join(tempRoot, "dist", replacedHero), "utf8"), heroBytes);
   assert.equal(await fs.readFile(path.join(tempRoot, "dist", replacedGallery), "utf8"), galleryBytes);
 
-  const originalFilters = structuredClone(items.site_settings.gallery_filters);
-  items.site_settings.gallery_filters = [
+  const originalFilters = structuredClone(items.gallery_page.gallery_filters);
+  items.gallery_page.gallery_filters = [
     { category: "kollektion", label: "Designs & <Ideen>", enabled: true },
     { category: "event", label: "Ausgeblendet", enabled: false },
     { category: "all", label: "Alle Arbeiten", enabled: true },
@@ -170,22 +228,42 @@ try {
   assert.ok(customGallery.indexOf('data-filter="kollektion"') < customGallery.indexOf('data-filter="all"'));
   assert.match(customGallery, /class="filter is-active"[^>]*data-filter="all"[^>]*aria-pressed="true"[^>]*>Alle Arbeiten/);
   assert.match(customGallery, /data-category="event"/, "Deaktivierte Filter entfernen keine Galerieeintraege.");
-  items.site_settings.gallery_filters = [{ category: "event", label: "Feiern", enabled: true }];
+  items.gallery_page.gallery_filters = [{ category: "event", label: "Feiern", enabled: true }];
   await import("./build-directus-site.mjs?without-all-filter");
   const withoutAll = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
   assert.doesNotMatch(withoutAll, /data-filter="all"|filter is-active/);
   assert.match(withoutAll, /data-filter="event" aria-pressed="false"/);
-  items.site_settings.gallery_filters = originalFilters.map((filter) => ({ ...filter, enabled: false }));
+  items.gallery_page.gallery_filters = originalFilters.map((filter) => ({ ...filter, enabled: false }));
   await import("./build-directus-site.mjs?disabled-gallery-filters");
   assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /class="filter-bar"|data-filter=/);
-  items.site_settings.gallery_filters = [];
+  items.gallery_page.gallery_filters = [];
   await import("./build-directus-site.mjs?empty-gallery-filters");
   assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /class="filter-bar"|data-filter=/);
-  items.site_settings.gallery_filters = [...originalFilters, originalFilters[0]];
+  items.gallery_page.gallery_filters = [...originalFilters, originalFilters[0]];
   await assert.rejects(import("./build-directus-site.mjs?duplicate-gallery-filter"), /Kategorie ungueltig oder doppelt/);
-  items.site_settings.gallery_filters = [{ category: 'event" onclick="alert(1)', label: "Unsicher", enabled: true }];
+  items.gallery_page.gallery_filters = [{ category: 'event" onclick="alert(1)', label: "Unsicher", enabled: true }];
   await assert.rejects(import("./build-directus-site.mjs?invalid-gallery-filter"), /Kategorie ungueltig oder doppelt/);
-  items.site_settings.gallery_filters = originalFilters;
+  items.gallery_page.gallery_filters = originalFilters;
+
+  // Images/extra package section can be hidden; gallery cards can be image-only.
+  items.gallery_page.show_intro_image = false;
+  items.packages_page.show_details = false;
+  const firstWork = { ...items.gallery_items[0] };
+  items.gallery_items[0].title = null;
+  items.gallery_items[0].description = null;
+  await import("./build-directus-site.mjs?optional-gallery-copy");
+  const imageOnlyGallery = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
+  assert.match(imageOnlyGallery, /page-intro-no-image/);
+  const firstCard = imageOnlyGallery.match(/<article class="gallery-card"[^>]*>[\s\S]*?<\/article>/)[0];
+  assert.match(firstCard, /<img/);
+  assert.doesNotMatch(firstCard, /gallery-card-body|<h3|<p>|null|undefined/);
+  assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "pakete.html"), "utf8"), /Persönlich &amp; &lt;passend&gt;|>Mehr erfahren<\/a>/);
+  items.gallery_items[0] = firstWork;
+  items.gallery_page.show_intro_image = true;
+  items.packages_page.show_details = true;
+  items.packages_page.details_cta_href = "javascript:alert(1)";
+  await assert.rejects(import("./build-directus-site.mjs?unsafe-page-link"), /interner Link ungueltig/);
+  items.packages_page.details_cta_href = "/kontakt";
 
   // Live must exclude preview entries even when the API returns too much data.
   process.env.SITE_CHANNEL = "live";
@@ -198,10 +276,16 @@ try {
   items.home_page.status = "preview";
   items.home_page.hero_title = "Nur in Preview geändert";
   items.site_settings.status = "preview";
+  items.gallery_page.status = "preview";
+  items.packages_page.status = "preview";
+  items.blog_page.status = "preview";
+  items.gallery_page.intro_title = "Preview-Galeriekopf";
+  items.packages_page.intro_title = "Preview-Paketkopf";
+  items.blog_page.intro_title = "Preview-Blogkopf";
   items.site_settings.brand_name = "Preview-Marke";
   items.site_settings.logo = null;
   items.site_settings.show_footer_logo = false;
-  items.site_settings.gallery_filters = [{ category: "event", label: "Preview-Filter", enabled: true }];
+  items.gallery_page.gallery_filters = [{ category: "event", label: "Preview-Filter", enabled: true }];
   items.home_tiles[0].status = "preview";
   items.legal_pages[0].status = "preview";
   await import("./build-directus-site.mjs?live-snapshot");
@@ -210,6 +294,9 @@ try {
   assert.match(liveHtml, new RegExp(`home-site-logo-${logoFileId}-[a-f0-9]{12}\\.webp`), "Das Live-Logo bleibt bei einer Preview-Aenderung erhalten.");
   assert.doesNotMatch(liveHtml, /Nur in Preview geändert|Preview-Marke|© Kachel/);
   assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /Preview-Filter/);
+  for (const file of ["galerie.html", "pakete.html", "blog.html"]) {
+    assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", file), "utf8"), /Preview-(Galerie|Paket|Blog)kopf/);
+  }
   assert.match(liveHtml, /<a href="\/" aria-current="page">Start<\/a>/);
   assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "impressum.html"), "utf8"), /Kontakt &lt;Test&gt;/, "Rechtstext darf nicht aus dem vorherigen Build stehen bleiben.");
   const stateBeforePreview = await fs.readFile(process.env.CMS_LIVE_STATE_PATH, "utf8");
@@ -219,12 +306,18 @@ try {
   assert.match(previewHtml, /Nur in Preview geändert/);
   assert.match(previewHtml, /Preview-Marke/);
   assert.match(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /Preview-Filter/);
+  for (const file of ["galerie.html", "pakete.html", "blog.html"]) {
+    assert.match(await fs.readFile(path.join(tempRoot, "dist", file), "utf8"), /Preview-(Galerie|Paket|Blog)kopf/);
+  }
   assert.doesNotMatch(previewHtml, /custom-logo|footer-brand/);
   assert.match(previewHtml, /<svg viewBox="0 0 64 64">/);
   assert.equal(await fs.readFile(process.env.CMS_LIVE_STATE_PATH, "utf8"), stateBeforePreview);
   assert.doesNotMatch((await fs.readdir(path.join(tempRoot, "dist"))).join(","), /live-state|singletons/);
   items.home_page.status = "live";
   items.site_settings.status = "live";
+  items.gallery_page.status = "live";
+  items.packages_page.status = "live";
+  items.blog_page.status = "live";
   process.env.SITE_CHANNEL = "live";
   await import("./build-directus-site.mjs?promote-live");
   assert.match(await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8"), /Nur in Preview geändert/);
