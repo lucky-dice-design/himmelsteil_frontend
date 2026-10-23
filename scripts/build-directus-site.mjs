@@ -292,8 +292,14 @@ function renderPageHeading(page, id) {
 
 function renderPackageDetails(page) {
   if (!page.show_details) return "";
-  if (!page.details_title?.trim() || !page.details_body?.trim() || !page.details_cta_label?.trim()) throw new Error("Pakete: Zusatzabschnitt unvollstaendig.");
-  return `<section class="section container split"><div><p class="eyebrow">${escapeHtml(page.details_eyebrow)}</p><h2>${escapeHtml(page.details_title)}</h2></div><div class="section-copy">${paragraphs(page.details_body)}<p><a class="button secondary" href="${internalPath(page.details_cta_href)}">${escapeHtml(page.details_cta_label)}</a></p></div></section>`;
+  const text = (key) => String(page[key] || "").trim();
+  const eyebrow = text("details_eyebrow"), title = text("details_title"), body = text("details_body");
+  const label = text("details_cta_label"), href = text("details_cta_href");
+  const heading = `${eyebrow ? `<p class="eyebrow">${escapeHtml(eyebrow)}</p>` : ""}${title ? `<h2>${escapeHtml(title)}</h2>` : ""}`;
+  const button = label && href ? `<p><a class="button secondary" href="${internalPath(href)}">${escapeHtml(label)}</a></p>` : "";
+  const copy = `${body ? paragraphs(body) : ""}${button}`;
+  if (!heading && !copy) return "";
+  return `<section class="section container${heading && copy ? " split" : ""}">${heading ? `<div>${heading}</div>` : ""}${copy ? `<div class="section-copy">${copy}</div>` : ""}</section>`;
 }
 
 function paragraphs(value) {
