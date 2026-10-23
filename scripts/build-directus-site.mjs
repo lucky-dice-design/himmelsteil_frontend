@@ -165,6 +165,14 @@ async function loadContent() {
   };
 }
 
+function imageExtension(response, bytes) {
+  // Directus returns SVG sources unchanged, even when format=webp is requested.
+  const type = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  const prefix = bytes.subarray(0, 8192).toString("utf8").replace(/^\uFEFF/, "");
+  if (type === "image/svg+xml" || /^\s*(?:<\?xml[\s\S]*?\?>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg(?:\s|>)/i.test(prefix)) return "svg";
+  return ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/avif": "avif" })[type] || "webp";
+}
+
 async function downloadGalleryImage(item) {
   if (!item.image) return null;
   if (typeof item.image === "string" && item.image.startsWith("assets/")) return item.image;
@@ -181,7 +189,7 @@ async function downloadGalleryImage(item) {
 
   const bytes = Buffer.from(await response.arrayBuffer());
   const version = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
-  const fileName = `${slugify(item.title || "galerie")}-${fileId}-${version}.webp`;
+  const fileName = `${slugify(item.title || "galerie")}-${fileId}-${version}.${imageExtension(response, bytes)}`;
   await fs.mkdir(outputDir, { recursive: true });
   await fs.writeFile(path.join(outputDir, fileName), bytes);
   return `assets/cms/${fileName}`;
@@ -202,7 +210,7 @@ async function downloadHomeImage(image, key, width, height, fit = "cover") {
   if (!response.ok) throw new Error(`Directus Startseitenbild ${fileId}: ${response.status} ${response.statusText}`);
   const bytes = Buffer.from(await response.arrayBuffer());
   const version = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
-  const fileName = `home-${slugify(key)}-${fileId}-${version}.webp`;
+  const fileName = `home-${slugify(key)}-${fileId}-${version}.${imageExtension(response, bytes)}`;
   await fs.mkdir(outputDir, { recursive: true });
   await fs.writeFile(path.join(outputDir, fileName), bytes);
   return `assets/cms/${fileName}`;
