@@ -58,6 +58,8 @@ try {
   const heroFileId = "11111111-2222-4333-8444-555555555555";
   const logoFileId = "22222222-3333-4444-8555-666666666666";
   let logoDownloads = 0;
+  let logoBytes = "logo-image-fixture";
+  let logoType = "image/webp";
   let heroBytes = "hero-image-fixture";
   let galleryBytes = "gallery-image-fixture";
   const galleryFileId = "33333333-4444-4555-8666-777777777777";
@@ -109,7 +111,7 @@ try {
       assert.equal(url.searchParams.get("fit"), "inside", "Ein Logo darf nicht beschnitten werden.");
       assert.equal(url.searchParams.get("width"), "640");
       assert.equal(url.searchParams.get("height"), "320");
-      return new Response("logo-image-fixture", { headers: { "Content-Type": "image/webp" } });
+      return new Response(logoBytes, { headers: { "Content-Type": logoType } });
     }
     if (url.pathname === `/assets/${heroFileId}`) {
       assert.equal(url.searchParams.get("fit"), "inside", "Das Hero-Motiv darf beim Download nicht beschnitten werden.");
@@ -264,6 +266,35 @@ try {
   items.packages_page.details_cta_href = "javascript:alert(1)";
   await assert.rejects(import("./build-directus-site.mjs?unsafe-page-link"), /interner Link ungueltig/);
   items.packages_page.details_cta_href = "/kontakt";
+
+  // Directus passes SVG logos through without converting them to the requested WebP.
+  const logoPath = (html) => html.match(new RegExp(`src="(assets/cms/home-site-logo-${logoFileId}-[a-f0-9]{12}\\.(?:svg|webp|png))"`))?.[1];
+  logoBytes = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1319 563" id="svg-fixture-mark"><path d="M0 0L100 50"/></svg>';
+  logoType = "image/svg+xml; charset=utf-8";
+  await import("./build-directus-site.mjs?svg-logo");
+  const svgLogoHtml = await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8");
+  const firstSvgPath = logoPath(svgLogoHtml);
+  assert.ok(firstSvgPath?.endsWith(".svg"), "SVG-Logos muessen mit passender Dateiendung ausgeliefert werden.");
+  assert.equal(await fs.readFile(path.join(tempRoot, "dist", firstSvgPath), "utf8"), logoBytes);
+  for (const file of ["index.html", "galerie.html", "pakete.html", "blog.html", "kontakt.html", "impressum.html", "datenschutz.html", `blog-${posts[0].slug}.html`]) {
+    const html = await fs.readFile(path.join(tempRoot, "dist", file), "utf8");
+    assert.equal(logoPath(html), firstSvgPath);
+    assert.equal((html.match(/class="brand-mark custom-logo"/g) || []).length, 2, "Header und Footer verwenden dasselbe Logo.");
+    assert.doesNotMatch(html, /svg-fixture-mark/, "CMS-SVG darf nicht in das HTML eingebettet werden.");
+  }
+  logoBytes = logoBytes.replace("L100 50", "L200 80");
+  logoType = "image/webp"; // Also detect the unchanged SVG body if a proxy mislabels it.
+  await import("./build-directus-site.mjs?replaced-svg-logo");
+  const secondSvgPath = logoPath(await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8"));
+  assert.ok(secondSvgPath?.endsWith(".svg"));
+  assert.notEqual(secondSvgPath, firstSvgPath, "Ersetzen unter derselben Datei-ID muss die Logo-Adresse aendern.");
+  assert.equal(await fs.readFile(path.join(tempRoot, "dist", secondSvgPath), "utf8"), logoBytes);
+  logoBytes = "png-logo-fixture";
+  logoType = "image/png";
+  await import("./build-directus-site.mjs?png-logo");
+  assert.ok(logoPath(await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8"))?.endsWith(".png"));
+  logoBytes = "logo-image-fixture";
+  logoType = "image/webp";
 
   // Live must exclude preview entries even when the API returns too much data.
   process.env.SITE_CHANNEL = "live";
