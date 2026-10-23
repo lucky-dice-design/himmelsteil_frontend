@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { createHash } from "node:crypto";
 
 const projectRoot = process.cwd();
 const distDir = path.join(projectRoot, "dist");
@@ -169,17 +170,18 @@ async function downloadGalleryImage(item) {
   const fileId = typeof item.image === "string" ? item.image : item.image.id;
   if (!fileId || !directusUrl) return null;
 
-  const fileName = `${slugify(item.title)}-${fileId}.webp`;
   const outputDir = path.join(distDir, "assets", "cms");
-  const outputPath = path.join(outputDir, fileName);
   const assetUrl = `${directusUrl}/assets/${fileId}?width=1600&height=1000&fit=cover&format=webp&quality=82`;
   const response = await fetch(assetUrl, {
     headers: directusToken ? { Authorization: `Bearer ${directusToken}` } : {},
   });
   if (!response.ok) throw new Error(`Directus Bild ${fileId}: ${response.status} ${response.statusText}`);
 
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const version = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
+  const fileName = `${slugify(item.title)}-${fileId}-${version}.webp`;
   await fs.mkdir(outputDir, { recursive: true });
-  await fs.writeFile(outputPath, Buffer.from(await response.arrayBuffer()));
+  await fs.writeFile(path.join(outputDir, fileName), bytes);
   return `assets/cms/${fileName}`;
 }
 
@@ -190,15 +192,17 @@ async function downloadHomeImage(image, key, width, height, fit = "cover") {
   if (!/^[0-9a-f-]{36}$/i.test(String(fileId)) || !directusUrl) {
     throw new Error(`Ungültiges Startseitenbild: ${key}`);
   }
-  const fileName = `home-${slugify(key)}-${fileId}.webp`;
   const outputDir = path.join(distDir, "assets", "cms");
   const response = await fetch(
     `${directusUrl}/assets/${fileId}?width=${width}&height=${height}&fit=${fit}&format=webp&quality=82`,
     { headers: directusToken ? { Authorization: `Bearer ${directusToken}` } : {} }
   );
   if (!response.ok) throw new Error(`Directus Startseitenbild ${fileId}: ${response.status} ${response.statusText}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const version = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
+  const fileName = `home-${slugify(key)}-${fileId}-${version}.webp`;
   await fs.mkdir(outputDir, { recursive: true });
-  await fs.writeFile(path.join(outputDir, fileName), Buffer.from(await response.arrayBuffer()));
+  await fs.writeFile(path.join(outputDir, fileName), bytes);
   return `assets/cms/${fileName}`;
 }
 
@@ -224,6 +228,27 @@ function validateHome(content) {
   for (const occasion of content.home_occasions) {
     if (!occasion.title || !occasion.description) throw new Error("Startseite: Anlass ohne Titel oder Beschreibung.");
   }
+}
+
+function renderGalleryFilters(settings) {
+  // Old private Live snapshots may predate the new field.
+  const filters = settings.gallery_filters ?? fallback.site_settings.gallery_filters;
+  if (!Array.isArray(filters)) throw new Error("Galerie-Filter: Liste erforderlich.");
+  const categories = new Set();
+  for (const filter of filters) {
+    if (!filter || !["all", "hochzeit", "event", "kollektion"].includes(filter.category) || categories.has(filter.category)) {
+      throw new Error("Galerie-Filter: Kategorie ungueltig oder doppelt.");
+    }
+    categories.add(filter.category);
+    if (typeof filter.label !== "string" || !filter.label.trim() || typeof filter.enabled !== "boolean") {
+      throw new Error("Galerie-Filter: Beschriftung und Sichtbarkeit erforderlich.");
+    }
+  }
+  const buttons = filters.filter((filter) => filter.enabled).map((filter) => {
+    const active = filter.category === "all";
+    return `<button class="filter${active ? " is-active" : ""}" type="button" data-filter="${filter.category}" aria-pressed="${active}" aria-controls="gallery-grid">${escapeHtml(filter.label)}</button>`;
+  }).join("");
+  return buttons ? `<div class="filter-bar" aria-label="Galerie filtern">${buttons}</div>` : "";
 }
 
 function paragraphs(value) {
@@ -527,6 +552,7 @@ await replaceBlock("kontakt.html", "CONTACT_FORM", renderContactForm(content.con
 await updateContactSeo(content.contact_form);
 
 await replaceBlock("galerie.html", "GALLERY", await renderGallery(content.gallery));
+await replaceBlock("galerie.html", "GALLERY_FILTERS", renderGalleryFilters(content.site_settings));
 await replaceBlock("pakete.html", "PACKAGES", renderPackages(content.packages));
 await replaceBlock("blog.html", "POSTS", renderPostCards(content.posts));
 

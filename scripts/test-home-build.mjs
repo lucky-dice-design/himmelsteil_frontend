@@ -23,6 +23,9 @@ try {
   const heroFileId = "11111111-2222-4333-8444-555555555555";
   const logoFileId = "22222222-3333-4444-8555-666666666666";
   let logoDownloads = 0;
+  let heroBytes = "hero-image-fixture";
+  let galleryBytes = "gallery-image-fixture";
+  const galleryFileId = "33333333-4444-4555-8666-777777777777";
   const homePage = { ...fallback.home_page, hero_title: "CMS & <Test>", seo_title: "CMS & <SEO>", hero_image: { id: heroFileId }, hero_image_copyright: "© Anna & <Foto>", show_hero_image_copyright: true };
   const homeTiles = fallback.home_tiles.map((tile) => ({ ...tile, image: null }));
   const homeOccasions = fallback.home_occasions.map((item) => ({ ...item }));
@@ -48,6 +51,7 @@ try {
   }
   items.posts.push({ ...items.posts[0], slug: "nur-preview", title: "Unveröffentlichter Beitrag", status: "preview" });
   items.gallery_items = items.gallery_items.map((item) => ({ ...item, image_copyright: "Ausgeschalteter Bildnachweis", show_image_copyright: false }));
+  items.gallery_items[0].image = { id: galleryFileId };
   items.home_tiles[0] = { ...items.home_tiles[0], image_copyright: "© Kachel", show_image_copyright: true };
   items.contact_form.intro_image_copyright = "© Kontaktfoto";
   items.contact_form.show_intro_image_copyright = true;
@@ -72,7 +76,10 @@ try {
       assert.equal(url.searchParams.get("fit"), "inside", "Das Hero-Motiv darf beim Download nicht beschnitten werden.");
       assert.equal(url.searchParams.get("width"), "1800");
       assert.equal(url.searchParams.get("height"), "1350");
-      return new Response("hero-image-fixture", { headers: { "Content-Type": "image/webp" } });
+      return new Response(heroBytes, { headers: { "Content-Type": "image/webp" } });
+    }
+    if (url.pathname === `/assets/${galleryFileId}`) {
+      return new Response(galleryBytes, { headers: { "Content-Type": "image/webp" } });
     }
     const collection = url.pathname.split("/")[2];
     assert.ok(Object.hasOwn(items, collection), `Unexpected collection: ${collection}`);
@@ -91,8 +98,10 @@ try {
   const html = await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8");
   assert.match(html, /<h1>CMS &amp; &lt;Test&gt;<\/h1>/);
   assert.match(html, /<title>CMS &amp; &lt;SEO&gt;<\/title>/);
-  assert.match(html, new RegExp(`src="assets/cms/home-hero-${heroFileId}\\.webp"`));
-  assert.equal(await fs.readFile(path.join(tempRoot, "dist", "assets", "cms", `home-hero-${heroFileId}.webp`), "utf8"), "hero-image-fixture");
+  const heroPath = (markup) => markup.match(new RegExp(`src="(assets/cms/home-hero-${heroFileId}-[a-f0-9]{12}\\.webp)"`))?.[1];
+  const galleryPath = (markup) => markup.match(new RegExp(`src="(assets/cms/[^"/]+-${galleryFileId}-[a-f0-9]{12}\\.webp)"`))?.[1];
+  assert.ok(heroPath(html));
+  assert.equal(await fs.readFile(path.join(tempRoot, "dist", heroPath(html)), "utf8"), heroBytes);
   assert.match(html, /<h3>Hochzeit &amp; Feier<\/h3>/);
   assert.equal((html.match(/class="image-tile/g) || []).length, 3);
   assert.doesNotMatch(html, /<h1>Schönes auf Papier\.<\/h1>/);
@@ -130,6 +139,54 @@ try {
   await assert.rejects(fs.access(path.join(tempRoot, "dist", "blog-alter-entwurf.html")), { code: "ENOENT" });
   await fs.access(path.join(tempRoot, "dist", "blog-nur-preview.html"));
 
+  // Replacing a file under the same Directus ID must invalidate cached image URLs.
+  const firstGalleryHtml = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
+  assert.ok(galleryPath(firstGalleryHtml));
+  await import("./build-directus-site.mjs?unchanged-images");
+  assert.equal(heroPath(await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8")), heroPath(html));
+  assert.equal(galleryPath(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8")), galleryPath(firstGalleryHtml));
+  heroBytes = "replaced-hero-image";
+  galleryBytes = "replaced-gallery-image";
+  await import("./build-directus-site.mjs?replaced-images");
+  const replacedHero = heroPath(await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8"));
+  const replacedGallery = galleryPath(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"));
+  assert.ok(replacedHero);
+  assert.ok(replacedGallery);
+  assert.notEqual(replacedHero, heroPath(html));
+  assert.notEqual(replacedGallery, galleryPath(firstGalleryHtml));
+  assert.equal(await fs.readFile(path.join(tempRoot, "dist", replacedHero), "utf8"), heroBytes);
+  assert.equal(await fs.readFile(path.join(tempRoot, "dist", replacedGallery), "utf8"), galleryBytes);
+
+  const originalFilters = structuredClone(items.site_settings.gallery_filters);
+  items.site_settings.gallery_filters = [
+    { category: "kollektion", label: "Designs & <Ideen>", enabled: true },
+    { category: "event", label: "Ausgeblendet", enabled: false },
+    { category: "all", label: "Alle Arbeiten", enabled: true },
+  ];
+  await import("./build-directus-site.mjs?custom-gallery-filters");
+  const customGallery = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
+  assert.match(customGallery, /data-filter="kollektion"[^>]*>Designs &amp; &lt;Ideen&gt;<\/button>/);
+  assert.doesNotMatch(customGallery, /data-filter="event"|data-filter="hochzeit"|Ausgeblendet/);
+  assert.ok(customGallery.indexOf('data-filter="kollektion"') < customGallery.indexOf('data-filter="all"'));
+  assert.match(customGallery, /class="filter is-active"[^>]*data-filter="all"[^>]*aria-pressed="true"[^>]*>Alle Arbeiten/);
+  assert.match(customGallery, /data-category="event"/, "Deaktivierte Filter entfernen keine Galerieeintraege.");
+  items.site_settings.gallery_filters = [{ category: "event", label: "Feiern", enabled: true }];
+  await import("./build-directus-site.mjs?without-all-filter");
+  const withoutAll = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
+  assert.doesNotMatch(withoutAll, /data-filter="all"|filter is-active/);
+  assert.match(withoutAll, /data-filter="event" aria-pressed="false"/);
+  items.site_settings.gallery_filters = originalFilters.map((filter) => ({ ...filter, enabled: false }));
+  await import("./build-directus-site.mjs?disabled-gallery-filters");
+  assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /class="filter-bar"|data-filter=/);
+  items.site_settings.gallery_filters = [];
+  await import("./build-directus-site.mjs?empty-gallery-filters");
+  assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /class="filter-bar"|data-filter=/);
+  items.site_settings.gallery_filters = [...originalFilters, originalFilters[0]];
+  await assert.rejects(import("./build-directus-site.mjs?duplicate-gallery-filter"), /Kategorie ungueltig oder doppelt/);
+  items.site_settings.gallery_filters = [{ category: 'event" onclick="alert(1)', label: "Unsicher", enabled: true }];
+  await assert.rejects(import("./build-directus-site.mjs?invalid-gallery-filter"), /Kategorie ungueltig oder doppelt/);
+  items.site_settings.gallery_filters = originalFilters;
+
   // Live must exclude preview entries even when the API returns too much data.
   process.env.SITE_CHANNEL = "live";
   await import("./build-directus-site.mjs?live-initial");
@@ -144,13 +201,15 @@ try {
   items.site_settings.brand_name = "Preview-Marke";
   items.site_settings.logo = null;
   items.site_settings.show_footer_logo = false;
+  items.site_settings.gallery_filters = [{ category: "event", label: "Preview-Filter", enabled: true }];
   items.home_tiles[0].status = "preview";
   items.legal_pages[0].status = "preview";
   await import("./build-directus-site.mjs?live-snapshot");
   const liveHtml = await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8");
   assert.match(liveHtml, /<h1>CMS &amp; &lt;Test&gt;<\/h1>/);
-  assert.match(liveHtml, new RegExp(`home-site-logo-${logoFileId}\\.webp`), "Das Live-Logo bleibt bei einer Preview-Aenderung erhalten.");
+  assert.match(liveHtml, new RegExp(`home-site-logo-${logoFileId}-[a-f0-9]{12}\\.webp`), "Das Live-Logo bleibt bei einer Preview-Aenderung erhalten.");
   assert.doesNotMatch(liveHtml, /Nur in Preview geändert|Preview-Marke|© Kachel/);
+  assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /Preview-Filter/);
   assert.match(liveHtml, /<a href="\/" aria-current="page">Start<\/a>/);
   assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "impressum.html"), "utf8"), /Kontakt &lt;Test&gt;/, "Rechtstext darf nicht aus dem vorherigen Build stehen bleiben.");
   const stateBeforePreview = await fs.readFile(process.env.CMS_LIVE_STATE_PATH, "utf8");
@@ -159,6 +218,7 @@ try {
   const previewHtml = await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8");
   assert.match(previewHtml, /Nur in Preview geändert/);
   assert.match(previewHtml, /Preview-Marke/);
+  assert.match(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /Preview-Filter/);
   assert.doesNotMatch(previewHtml, /custom-logo|footer-brand/);
   assert.match(previewHtml, /<svg viewBox="0 0 64 64">/);
   assert.equal(await fs.readFile(process.env.CMS_LIVE_STATE_PATH, "utf8"), stateBeforePreview);

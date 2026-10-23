@@ -42,7 +42,7 @@ source_dir=/opt/himmelsteil-preview-src
 test -f /etc/himmelsteil-preview.env
 test -x /usr/local/sbin/himmelsteil-preview-build
 test -d "$source_dir/dist"
-# Serialize source replacement with the existing five-minute preview build.
+# Serialize source replacement with the scheduled publication builds.
 exec 8>/run/lock/himmelsteil-preview-build.lock
 flock -w 300 8
 tar -czf "$snapshot/source.tar.gz" -C "$source_dir" .
