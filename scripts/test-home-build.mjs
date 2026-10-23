@@ -267,6 +267,28 @@ try {
   await assert.rejects(import("./build-directus-site.mjs?unsafe-page-link"), /interner Link ungueltig/);
   items.packages_page.details_cta_href = "/kontakt";
 
+  const originalDetails = { ...items.packages_page };
+  for (const [name, changes, expected, absent] of [
+    ["no-title", { details_title: null }, /Ein Paket ist kein starres Produkt/, /<h2/],
+    ["no-body", { details_body: null }, /Persönlich &amp; &lt;passend&gt;/, /Ein Paket ist kein starres Produkt/],
+    ["no-button-label", { details_cta_label: null }, /Persönlich &amp; &lt;passend&gt;/, /<a\b/],
+    ["no-button-target", { details_cta_href: "" }, /Persönlich &amp; &lt;passend&gt;/, /<a\b/],
+    ["body-only", { details_eyebrow: "", details_title: "", details_body: "Nur Text & <optional>", details_cta_label: "" }, /Nur Text &amp; &lt;optional&gt;/, /<h2|<a\b|container split/],
+  ]) {
+    items.packages_page = { ...originalDetails, ...changes };
+    await import(`./build-directus-site.mjs?optional-package-${name}`);
+    const html = await fs.readFile(path.join(tempRoot, "dist", "pakete.html"), "utf8");
+    const details = html.match(/<!-- CMS:PACKAGE_DETAILS:START -->([\s\S]*?)<!-- CMS:PACKAGE_DETAILS:END -->/)[1];
+    assert.match(details, expected);
+    assert.doesNotMatch(details, absent);
+    assert.doesNotMatch(details, /<h2><\/h2>|<p><\/p>|undefined|null/);
+  }
+  items.packages_page = { ...originalDetails, details_eyebrow: null, details_title: " ", details_body: null, details_cta_label: null };
+  await import("./build-directus-site.mjs?empty-package-details");
+  const emptyDetails = (await fs.readFile(path.join(tempRoot, "dist", "pakete.html"), "utf8")).match(/<!-- CMS:PACKAGE_DETAILS:START -->([\s\S]*?)<!-- CMS:PACKAGE_DETAILS:END -->/)[1];
+  assert.equal(emptyDetails.trim(), "", "Ein eingeschalteter leerer Zusatzabschnitt darf den Build nicht blockieren.");
+  items.packages_page = originalDetails;
+
   // Directus passes SVG logos through without converting them to the requested WebP.
   const logoPath = (html) => html.match(new RegExp(`src="(assets/cms/home-site-logo-${logoFileId}-[a-f0-9]{12}\\.(?:svg|webp|png))"`))?.[1];
   logoBytes = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1319 563" id="svg-fixture-mark"><path d="M0 0L100 50"/></svg>';
