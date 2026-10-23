@@ -283,7 +283,7 @@ async function renderPageIntro(page, name) {
     const imageClass = name === "packages_page" ? "reference-event" : "reference-welcome";
     media = captionedImage(`<div class="page-intro-visual${reference ? " reference-crop" : ""}"><img${reference ? ` class="${imageClass}"` : ""} src="${escapeHtml(image)}" width="${reference ? 843 : 1200}" height="${reference ? 1600 : 1200}" decoding="async" fetchpriority="high" alt="${escapeHtml(page.intro_image_alt)}"></div>`, page, "intro_image");
   }
-  return `<section class="page-intro container${page.show_intro_image ? "" : " page-intro-no-image"}"><div><p class="eyebrow">${escapeHtml(page.intro_eyebrow)}</p><h1>${escapeHtml(page.intro_title)}</h1>${paragraphs(page.intro_body)}</div>${media}</section>`;
+  return `<section class="page-intro container${name === "packages_page" ? " page-intro-packages" : ""}${page.show_intro_image ? "" : " page-intro-no-image"}"><div><p class="eyebrow">${escapeHtml(page.intro_eyebrow)}</p><h1>${escapeHtml(page.intro_title)}</h1>${paragraphs(page.intro_body)}</div>${media}</section>`;
 }
 
 function renderPageHeading(page, id) {
@@ -649,7 +649,7 @@ for (const file of (await fs.readdir(distDir)).filter((name) => name.endsWith(".
   const currentPath = file === "index.html" ? "/" : file.startsWith("blog-") ? "/blog" : `/${file.slice(0, -5)}`;
   html = html.replace(/<header class="site-header">[\s\S]*?<\/header>/, () => siteHeader(currentPath));
   html = html.replace(/<footer class="site-footer">[\s\S]*?<\/footer>/, () => siteFooter());
-  html = html.replace(/styles\.css\?v=\d+/g, "styles.css?v=11");
+  html = html.replace(/styles\.css\?v=\d+/g, "styles.css?v=12");
   html = html.replace(/script\.js\?v=\d+/g, "script.js?v=4");
   html = html.replace(/<meta property="og:site_name" content="[^"]*">/, () => `<meta property="og:site_name" content="${escapeHtml(content.site_settings.brand_name)}">`);
   if (["index.html", "kontakt.html"].includes(file)) {
