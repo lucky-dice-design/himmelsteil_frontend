@@ -62,7 +62,19 @@ Das Datenmodell und die VPS-Einrichtung sind im separaten Repository `himmelstei
 
 ## Deployment auf dem VPS
 
-Die GitHub Action in `.github/workflows/deploy.yml` prüft Änderungen. Nach der einmaligen Einrichtung gemäß `deploy/README.md` überträgt sie erfolgreiche Hauptbranch-Releases per SSH in die VPS-Buildquelle und führt den Vorschau-Build aus. Der VPS baut die Vorschau alle fünf Minuten aus veröffentlichten Directus-Inhalten; Frontend-Codeänderungen benötigen eine Aktualisierung der Quellkopie auf dem VPS; nach Aktivierung übernimmt dies der Workflow.
+Die GitHub Action in `.github/workflows/deploy.yml` prüft Änderungen. Nach der einmaligen Einrichtung gemäß `deploy/README.md` überträgt sie erfolgreiche Hauptbranch-Releases per SSH in die VPS-Buildquelle und baut die Vorschau sowie die bereits eingerichtete Live-Ausgabe. Die aktuellen Backend-Cronjobs starten jede Minute; Frontend-Codeänderungen benötigen eine Aktualisierung der Quellkopie auf dem VPS, die nach Aktivierung der Workflow übernimmt.
+
+CMS-Aktualisierungen: Mit den aktuellen Backend-Crondateien startet jede Minute ein
+Live-Build; die geschützte Vorschau startet 30 Sekunden versetzt. Änderungen mit
+Status Live erscheinen nach dem nächsten erfolgreichen Build und erneutem Laden
+der Seite (normalerweise nach etwa einer Minute plus Builddauer). Preview bleibt
+geschützt. Bereits geöffnete Seiten aktualisieren sich nicht von selbst.
+Die Caddy-Konfiguration lässt öffentliche Dateien beim Laden revalidieren;
+CMS-Bilder erhalten bei geändertem Dateiinhalt eine neue Adresse, auch wenn die
+Directus-Datei-ID gleich bleibt. Installation und Prüfungen stehen unter
+`himmelsteil_backend/server/preview/README.md`. Dafür ist keine neue
+Directus-Schema-Migration erforderlich; bestehende Live-/Preview-Migrationen
+müssen bereits eingerichtet sein.
 
 Die Schritte zum Bereitstellen der statischen Dateien und zur DNS-Umstellung stehen im Backend-Repository unter `server/directus/README.md`. URL-Umschreibung und VPS-Härtung sind dort unter `server/security/README.md` beschrieben. Die Hauptdomain erst nach Prüfung von Inhalt, Bildrechten, Impressum und Datenschutz umstellen.
 

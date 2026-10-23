@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { createHash } from "node:crypto";
 
 const projectRoot = process.cwd();
 const distDir = path.join(projectRoot, "dist");
@@ -169,17 +170,18 @@ async function downloadGalleryImage(item) {
   const fileId = typeof item.image === "string" ? item.image : item.image.id;
   if (!fileId || !directusUrl) return null;
 
-  const fileName = `${slugify(item.title)}-${fileId}.webp`;
   const outputDir = path.join(distDir, "assets", "cms");
-  const outputPath = path.join(outputDir, fileName);
   const assetUrl = `${directusUrl}/assets/${fileId}?width=1600&height=1000&fit=cover&format=webp&quality=82`;
   const response = await fetch(assetUrl, {
     headers: directusToken ? { Authorization: `Bearer ${directusToken}` } : {},
   });
   if (!response.ok) throw new Error(`Directus Bild ${fileId}: ${response.status} ${response.statusText}`);
 
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const version = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
+  const fileName = `${slugify(item.title)}-${fileId}-${version}.webp`;
   await fs.mkdir(outputDir, { recursive: true });
-  await fs.writeFile(outputPath, Buffer.from(await response.arrayBuffer()));
+  await fs.writeFile(path.join(outputDir, fileName), bytes);
   return `assets/cms/${fileName}`;
 }
 
@@ -190,15 +192,17 @@ async function downloadHomeImage(image, key, width, height, fit = "cover") {
   if (!/^[0-9a-f-]{36}$/i.test(String(fileId)) || !directusUrl) {
     throw new Error(`Ungültiges Startseitenbild: ${key}`);
   }
-  const fileName = `home-${slugify(key)}-${fileId}.webp`;
   const outputDir = path.join(distDir, "assets", "cms");
   const response = await fetch(
     `${directusUrl}/assets/${fileId}?width=${width}&height=${height}&fit=${fit}&format=webp&quality=82`,
     { headers: directusToken ? { Authorization: `Bearer ${directusToken}` } : {} }
   );
   if (!response.ok) throw new Error(`Directus Startseitenbild ${fileId}: ${response.status} ${response.statusText}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const version = createHash("sha256").update(bytes).digest("hex").slice(0, 12);
+  const fileName = `home-${slugify(key)}-${fileId}-${version}.webp`;
   await fs.mkdir(outputDir, { recursive: true });
-  await fs.writeFile(path.join(outputDir, fileName), Buffer.from(await response.arrayBuffer()));
+  await fs.writeFile(path.join(outputDir, fileName), bytes);
   return `assets/cms/${fileName}`;
 }
 
