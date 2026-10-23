@@ -1,5 +1,97 @@
 {
+  "gallery_page": {
+    "gallery_filters": [
+      {
+        "category": "all",
+        "label": "Alle",
+        "enabled": true
+      },
+      {
+        "category": "hochzeit",
+        "label": "Hochzeit",
+        "enabled": true
+      },
+      {
+        "category": "event",
+        "label": "Event",
+        "enabled": true
+      },
+      {
+        "category": "kollektion",
+        "label": "Kollektion",
+        "enabled": true
+      }
+    ],
+    "seo_title": "Papeterie-Galerie für Hochzeit & Event | himmelsteil",
+    "seo_description": "Entdecke individuelle Einladungen, Tagespapeterie, Menükarten und Papeterie-Kollektionen für Hochzeit und Event.",
+    "intro_eyebrow": "Ausgewählte Arbeiten",
+    "intro_title": "Galerie",
+    "intro_body": "Feine Details, ruhige Farben und durchdachte Kombinationen. Nutze die Filter, um passende Arbeiten für deinen Anlass zu entdecken.",
+    "intro_image": null,
+    "intro_image_alt": "Nahaufnahme einer Papeterie mit Wachssiegel",
+    "show_intro_image": true,
+    "section_eyebrow": "Papeterie",
+    "section_title": "Arbeiten zum Stöbern",
+    "section_body": "",
+    "filter_label": "Galerie filtern",
+    "results_message": "{count} Arbeiten werden angezeigt.",
+    "intro_image_copyright": "",
+    "show_intro_image_copyright": false
+  },
+  "packages_page": {
+    "seo_title": "Papeterie-Pakete für Hochzeit & Feier | himmelsteil",
+    "seo_description": "Flexible Papeterie-Pakete für Einladung, Hochzeitstag und ein durchgängiges Gestaltungskonzept vom ersten Umschlag bis zur Dankeskarte.",
+    "intro_eyebrow": "Passend kombiniert",
+    "intro_title": "Pakete",
+    "intro_body": "Ein klarer Ausgangspunkt für typische Wünsche. Umfang, Papier und Stückzahl werden anschließend persönlich auf euer Fest abgestimmt.",
+    "intro_image": null,
+    "intro_image_alt": "Einladungsset auf dunklem Untergrund",
+    "show_intro_image": true,
+    "section_eyebrow": "Drei Möglichkeiten",
+    "section_title": "So viel Papeterie, wie ihr braucht.",
+    "section_body": "Die Pakete geben Orientierung und bleiben flexibel. Preise entstehen nach Papier, Veredelung, Stückzahl und gewünschter Individualisierung.",
+    "show_details": true,
+    "details_eyebrow": "Gut zu wissen",
+    "details_title": "Individuell bleibt individuell.",
+    "details_body": "Ein Paket ist kein starres Produkt. Einzelne Bestandteile können ergänzt, weggelassen oder für Taufe, Kommunion, Geburtstag und Business-Events neu zusammengestellt werden.",
+    "details_cta_label": "Unverbindlich anfragen",
+    "details_cta_href": "/kontakt",
+    "intro_image_copyright": "",
+    "show_intro_image_copyright": false
+  },
+  "blog_page": {
+    "seo_title": "Papeterie-Blog: Hochzeit, Planung & Gestaltung | himmelsteil",
+    "seo_description": "Praktische Planungshilfen und Inspiration rund um Hochzeitspapeterie, Budgets, Farben und Papeterie für besondere Anlässe.",
+    "intro_eyebrow": "Inspiration & Planung",
+    "intro_title": "Blog",
+    "intro_body": "Gedanken zu Papier, Gestaltung und den vielen kleinen Entscheidungen, die aus einer Feier ein stimmiges Ganzes machen.",
+    "intro_image": null,
+    "intro_image_alt": "Papeterie und Wachssiegel in sanften Farbtönen",
+    "show_intro_image": true,
+    "section_eyebrow": "Notizen aus dem Atelier",
+    "section_title": "Neu im Blog",
+    "section_body": "",
+    "read_label": "Artikel lesen",
+    "breadcrumb_label": "Brotkrümelnavigation",
+    "home_label": "Start",
+    "author_prefix": "Von",
+    "reading_suffix": "Minuten Lesezeit",
+    "packages_cta_label": "Pakete ansehen",
+    "contact_cta_label": "Projekt anfragen",
+    "intro_image_copyright": "",
+    "show_intro_image_copyright": false
+  },
   "site_settings": {
+    "menu_close_label": "Menü schließen",
+    "owner_name": "Anna Dahlenburg",
+    "business_description": "Individuelle Papeterie für Hochzeiten, Taufen, Geburtstage und besondere Events.",
+    "street_address": "Paradeisstr. 7",
+    "postal_code": "82362",
+    "city": "Weilheim",
+    "country": "DE",
+    "legal_eyebrow": "Rechtliches",
+    "unpublished_message": "Dieser Inhalt ist derzeit nicht veröffentlicht.",
+    "default_package_cta": "Paket anfragen",
     "gallery_filters": [
       {"category": "all", "label": "Alle", "enabled": true},
       {"category": "hochzeit", "label": "Hochzeit", "enabled": true},
@@ -30,6 +122,10 @@
   "legal_pages": [],
   "legal_sections": [],
   "contact_form": {
+    "timeout_message": "Der Versand dauert zu lange. Bitte versuche es erneut oder schreibe uns direkt eine E-Mail.",
+    "privacy_intro": "Weitere Informationen stehen im",
+    "privacy_link_label": "Datenschutz",
+    "noscript_message": "Für das Formular ist JavaScript erforderlich. Alternativ erreichst du uns unter",
     "seo_title": "Papeterie anfragen | himmelsteil Papeterie Weilheim",
     "seo_description": "Individuelle Papeterie für Hochzeit, Taufe, Geburtstag oder Business-Event unverbindlich bei himmelsteil Papeterie in Weilheim anfragen.",
     "intro_eyebrow": "Deine Anfrage",
@@ -63,6 +159,7 @@
     {"sort": 5, "label": "Anderes Projekt"}
   ],
   "home_page": {
+    "tiles_label": "Websitebereiche",
     "seo_title": "Individuelle Hochzeits- & Eventpapeterie | himmelsteil Weilheim",
     "seo_description": "Individuelle Papeterie aus Weilheim für Hochzeiten, Taufen, Geburtstage und besondere Events. Persönlich gestaltet statt von der Stange.",
     "hero_eyebrow": "Individuelle Papeterie aus Weilheim",

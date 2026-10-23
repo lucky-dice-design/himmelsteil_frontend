@@ -5,7 +5,7 @@ const menuLabel = menuToggle?.querySelector(".sr-only");
 const setMenuState = (isOpen) => {
   mainNav?.classList.toggle("is-open", isOpen);
   menuToggle?.setAttribute("aria-expanded", String(isOpen));
-  if (menuLabel) menuLabel.textContent = isOpen ? "Menü schließen" : "Menü öffnen";
+  if (menuLabel) menuLabel.textContent = isOpen ? menuToggle.dataset.closeLabel || "Menü schließen" : menuToggle.dataset.openLabel || "Menü öffnen";
 };
 
 menuToggle?.addEventListener("click", () => {
@@ -51,7 +51,7 @@ filters.forEach((filter) => {
     });
 
     if (galleryStatus) {
-      galleryStatus.textContent = `${visibleCount} Arbeiten werden angezeigt.`;
+      galleryStatus.textContent = (galleryStatus.dataset.resultsMessage || "{count} Arbeiten werden angezeigt.").replaceAll("{count}", String(visibleCount));
     }
   });
 });
@@ -100,7 +100,7 @@ contactForm?.addEventListener("submit", async (event) => {
     contactRequestId = crypto.randomUUID();
   } catch (error) {
     contactStatus.textContent = error.name === "AbortError"
-      ? "Der Versand dauert zu lange. Bitte versuche es erneut oder schreibe uns direkt eine E-Mail."
+      ? contactForm.dataset.timeoutMessage || contactForm.dataset.errorMessage
       : error instanceof TypeError ? contactForm.dataset.errorMessage : error.message || contactForm.dataset.errorMessage;
     contactStatus.classList.add("is-error");
   } finally {
