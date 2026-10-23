@@ -14,7 +14,17 @@ Statische Mehrseiten-Website für eine Design- und Papeterie-Marke mit Fokus auf
 
 ## Architektur
 
-Neue CMS-Funktionen: Header und Footer werden gemeinsam in `site_settings` bearbeitet.
+Neue CMS-Funktionen: Header, Footer und Galerie-Filter werden gemeinsam unter
+**Website → Website-Einstellungen** (`site_settings`) bearbeitet.
+Unter **Galerie-Filter** lassen sich die Beschriftungen von Alle, Hochzeit, Event
+und Kollektion ändern, die Buttons umsortieren oder über **Filter anzeigen**
+deaktivieren. Eine leere Liste blendet die gesamte Filterleiste aus. Das Ausblenden
+eines Filters entfernt keine Galerieeinträge; diese bleiben in der Gesamtansicht
+sichtbar. Kategorien entsprechen den bestehenden Kategoriekennungen der Arbeiten.
+Die Filter folgen dem Live-/Preview-Status der Website-Einstellungen. Vor dem
+Deployment des neuen Frontends das Backend deployen und das wiederholbare Setup
+`sudo bash /opt/himmelsteil-cms/setup-website-features.sh` ausführen, damit das
+neue Feld und die Editor-/Build-Rechte vorhanden sind.
 Ein eigenes Logo kann dort aus dem Ordner `Website` hochgeladen/ausgewählt werden.
 Es erscheint im Header und optional über `show_footer_logo` auch im Footer.
 Ohne Logo-Datei bleibt das bisherige Symbol sichtbar; `logo_alt` beschreibt das Bild.

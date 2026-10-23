@@ -1,5 +1,11 @@
 {
   "site_settings": {
+    "gallery_filters": [
+      {"category": "all", "label": "Alle", "enabled": true},
+      {"category": "hochzeit", "label": "Hochzeit", "enabled": true},
+      {"category": "event", "label": "Event", "enabled": true},
+      {"category": "kollektion", "label": "Kollektion", "enabled": true}
+    ],
     "logo": null,
     "logo_alt": "himmelsteil Papeterie",
     "show_footer_logo": false,

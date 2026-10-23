@@ -157,6 +157,36 @@ try {
   assert.equal(await fs.readFile(path.join(tempRoot, "dist", replacedHero), "utf8"), heroBytes);
   assert.equal(await fs.readFile(path.join(tempRoot, "dist", replacedGallery), "utf8"), galleryBytes);
 
+  const originalFilters = structuredClone(items.site_settings.gallery_filters);
+  items.site_settings.gallery_filters = [
+    { category: "kollektion", label: "Designs & <Ideen>", enabled: true },
+    { category: "event", label: "Ausgeblendet", enabled: false },
+    { category: "all", label: "Alle Arbeiten", enabled: true },
+  ];
+  await import("./build-directus-site.mjs?custom-gallery-filters");
+  const customGallery = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
+  assert.match(customGallery, /data-filter="kollektion"[^>]*>Designs &amp; &lt;Ideen&gt;<\/button>/);
+  assert.doesNotMatch(customGallery, /data-filter="event"|data-filter="hochzeit"|Ausgeblendet/);
+  assert.ok(customGallery.indexOf('data-filter="kollektion"') < customGallery.indexOf('data-filter="all"'));
+  assert.match(customGallery, /class="filter is-active"[^>]*data-filter="all"[^>]*aria-pressed="true"[^>]*>Alle Arbeiten/);
+  assert.match(customGallery, /data-category="event"/, "Deaktivierte Filter entfernen keine Galerieeintraege.");
+  items.site_settings.gallery_filters = [{ category: "event", label: "Feiern", enabled: true }];
+  await import("./build-directus-site.mjs?without-all-filter");
+  const withoutAll = await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8");
+  assert.doesNotMatch(withoutAll, /data-filter="all"|filter is-active/);
+  assert.match(withoutAll, /data-filter="event" aria-pressed="false"/);
+  items.site_settings.gallery_filters = originalFilters.map((filter) => ({ ...filter, enabled: false }));
+  await import("./build-directus-site.mjs?disabled-gallery-filters");
+  assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /class="filter-bar"|data-filter=/);
+  items.site_settings.gallery_filters = [];
+  await import("./build-directus-site.mjs?empty-gallery-filters");
+  assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /class="filter-bar"|data-filter=/);
+  items.site_settings.gallery_filters = [...originalFilters, originalFilters[0]];
+  await assert.rejects(import("./build-directus-site.mjs?duplicate-gallery-filter"), /Kategorie ungueltig oder doppelt/);
+  items.site_settings.gallery_filters = [{ category: 'event" onclick="alert(1)', label: "Unsicher", enabled: true }];
+  await assert.rejects(import("./build-directus-site.mjs?invalid-gallery-filter"), /Kategorie ungueltig oder doppelt/);
+  items.site_settings.gallery_filters = originalFilters;
+
   // Live must exclude preview entries even when the API returns too much data.
   process.env.SITE_CHANNEL = "live";
   await import("./build-directus-site.mjs?live-initial");
@@ -171,6 +201,7 @@ try {
   items.site_settings.brand_name = "Preview-Marke";
   items.site_settings.logo = null;
   items.site_settings.show_footer_logo = false;
+  items.site_settings.gallery_filters = [{ category: "event", label: "Preview-Filter", enabled: true }];
   items.home_tiles[0].status = "preview";
   items.legal_pages[0].status = "preview";
   await import("./build-directus-site.mjs?live-snapshot");
@@ -178,6 +209,7 @@ try {
   assert.match(liveHtml, /<h1>CMS &amp; &lt;Test&gt;<\/h1>/);
   assert.match(liveHtml, new RegExp(`home-site-logo-${logoFileId}-[a-f0-9]{12}\\.webp`), "Das Live-Logo bleibt bei einer Preview-Aenderung erhalten.");
   assert.doesNotMatch(liveHtml, /Nur in Preview geändert|Preview-Marke|© Kachel/);
+  assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /Preview-Filter/);
   assert.match(liveHtml, /<a href="\/" aria-current="page">Start<\/a>/);
   assert.doesNotMatch(await fs.readFile(path.join(tempRoot, "dist", "impressum.html"), "utf8"), /Kontakt &lt;Test&gt;/, "Rechtstext darf nicht aus dem vorherigen Build stehen bleiben.");
   const stateBeforePreview = await fs.readFile(process.env.CMS_LIVE_STATE_PATH, "utf8");
@@ -186,6 +218,7 @@ try {
   const previewHtml = await fs.readFile(path.join(tempRoot, "dist", "index.html"), "utf8");
   assert.match(previewHtml, /Nur in Preview geändert/);
   assert.match(previewHtml, /Preview-Marke/);
+  assert.match(await fs.readFile(path.join(tempRoot, "dist", "galerie.html"), "utf8"), /Preview-Filter/);
   assert.doesNotMatch(previewHtml, /custom-logo|footer-brand/);
   assert.match(previewHtml, /<svg viewBox="0 0 64 64">/);
   assert.equal(await fs.readFile(process.env.CMS_LIVE_STATE_PATH, "utf8"), stateBeforePreview);

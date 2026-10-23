@@ -24,7 +24,9 @@
     </section>
     <section class="section container" aria-labelledby="arbeiten-title">
       <div class="section-heading"><p class="eyebrow">Papeterie</p><h2 id="arbeiten-title">Arbeiten zum Stöbern</h2></div>
-      <div class="filter-bar" aria-label="Galerie filtern"><button class="filter is-active" type="button" data-filter="all" aria-controls="gallery-grid">Alle</button><button class="filter" type="button" data-filter="hochzeit" aria-controls="gallery-grid">Hochzeit</button><button class="filter" type="button" data-filter="event" aria-controls="gallery-grid">Event</button><button class="filter" type="button" data-filter="kollektion" aria-controls="gallery-grid">Kollektion</button></div>
+      <!-- CMS:GALLERY_FILTERS:START -->
+      <div class="filter-bar" aria-label="Galerie filtern"><button class="filter is-active" type="button" data-filter="all" aria-pressed="true" aria-controls="gallery-grid">Alle</button><button class="filter" type="button" data-filter="hochzeit" aria-pressed="false" aria-controls="gallery-grid">Hochzeit</button><button class="filter" type="button" data-filter="event" aria-pressed="false" aria-controls="gallery-grid">Event</button><button class="filter" type="button" data-filter="kollektion" aria-pressed="false" aria-controls="gallery-grid">Kollektion</button></div>
+      <!-- CMS:GALLERY_FILTERS:END -->
       <p class="sr-only" data-gallery-status aria-live="polite">6 Arbeiten werden angezeigt.</p>
       <div id="gallery-grid" class="gallery-grid">
         <!-- CMS:GALLERY:START -->

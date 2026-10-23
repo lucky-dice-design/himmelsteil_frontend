@@ -230,6 +230,27 @@ function validateHome(content) {
   }
 }
 
+function renderGalleryFilters(settings) {
+  // Old private Live snapshots may predate the new field.
+  const filters = settings.gallery_filters ?? fallback.site_settings.gallery_filters;
+  if (!Array.isArray(filters)) throw new Error("Galerie-Filter: Liste erforderlich.");
+  const categories = new Set();
+  for (const filter of filters) {
+    if (!filter || !["all", "hochzeit", "event", "kollektion"].includes(filter.category) || categories.has(filter.category)) {
+      throw new Error("Galerie-Filter: Kategorie ungueltig oder doppelt.");
+    }
+    categories.add(filter.category);
+    if (typeof filter.label !== "string" || !filter.label.trim() || typeof filter.enabled !== "boolean") {
+      throw new Error("Galerie-Filter: Beschriftung und Sichtbarkeit erforderlich.");
+    }
+  }
+  const buttons = filters.filter((filter) => filter.enabled).map((filter) => {
+    const active = filter.category === "all";
+    return `<button class="filter${active ? " is-active" : ""}" type="button" data-filter="${filter.category}" aria-pressed="${active}" aria-controls="gallery-grid">${escapeHtml(filter.label)}</button>`;
+  }).join("");
+  return buttons ? `<div class="filter-bar" aria-label="Galerie filtern">${buttons}</div>` : "";
+}
+
 function paragraphs(value) {
   return String(value).split(/\n\s*\n/).filter(Boolean).map((part) => `<p>${escapeHtml(part.trim()).replaceAll(/\r?\n/g, "<br>")}</p>`).join("\n        ");
 }
@@ -531,6 +552,7 @@ await replaceBlock("kontakt.html", "CONTACT_FORM", renderContactForm(content.con
 await updateContactSeo(content.contact_form);
 
 await replaceBlock("galerie.html", "GALLERY", await renderGallery(content.gallery));
+await replaceBlock("galerie.html", "GALLERY_FILTERS", renderGalleryFilters(content.site_settings));
 await replaceBlock("pakete.html", "PACKAGES", renderPackages(content.packages));
 await replaceBlock("blog.html", "POSTS", renderPostCards(content.posts));
 
